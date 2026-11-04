@@ -294,15 +294,28 @@ LLM получает **короткий промпт требований**, н�
 | Модуль | Где живут правила | Подменяется (фейк / второй провайдер) | Кто решает | Сквозные слои |
 |---|---|---|---|---|
 | `accounts` | корень Account (R5, R6) | `AccountRepository` (in-memory фейк), `SecretBox` | domain/service | usecase — оркестрация «вступить» |
-| `sources` | хранилище (R3, R4, R7) + service | `SourceRepository` | service + условия в репозитории | usecase почти сквозной |
-| `ingest` | — (без правил, транспорт) | `TelegramGateway` (фейк-клиент, как `_FakeClient` в infomir) | adapter | service тонкий |
+| `sources` | хранилище (R3, R4, R7) + service | `SourceRepository` | service + условия в репозитории | usecase — только вход и транзакция |
+| `ingest` | — (без правил, транспорт) | `TelegramGateway` (фейк-клиент, как `_FakeClient` в infomir) | adapter | нет: usecase → порт |
 | `screening` | service (предфильтр), budget (R8) | `LlmClassifier` (NeuroAPI / фейк), `UsageRepository` | service | — |
 | `findings` | корень Finding (R1) + advisory lock | `FindingRepository`, `Similarity` | service | — |
-| `delivery` | R11 на входе | `Notifier` (aiogram / фейк) | handler + usecase | service тонкий |
+| `delivery` | R11 на входе | `Notifier` (aiogram / фейк) | handler + usecase | нет: usecase → порт |
 
-Платёж цепочкой окупается в `screening` и `findings` (подмена LLM и похожести в тестах) и в
-`accounts` (весь пул тестируется с фейком Telegram). В `ingest` и `delivery` слои в основном
-сквозные — отклонение не предлагаю, решение за пользователем.
+**Решение пользователя: транзитных слоёв не делать, если этого не требует единообразие.**
+Правило для сборщика:
+- слой существует, только если он что-то **решает** (правило, оркестрация, транзакция) или
+  **подменяется** (порт с фейком);
+- исключение ради единообразия: каждый внешний вход (обработчик бота, обработчик апдейта
+  Telethon, фоновый воркер) вызывает **usecase** — во всех модулях одинаково, это единая
+  точка входа в операцию и граница транзакции;
+- **service** создаётся только там, где в нём живут правила: `accounts` (темп и статусы),
+  `sources` (закрепление и пополнение), `screening` (предфильтр, бюджет),
+  `findings` (дедуп, доставка). В `ingest` и `delivery` service нет: usecase работает с
+  портами (`TelegramGateway`, `Notifier`) напрямую;
+- порты остаются там, где есть подмена (таблица выше); репозиторий без фейка не нужен —
+  но у всех репозиториев фейк есть (контрактные тесты), так что порты у них остаются.
+
+Цепочка окупается в `screening` и `findings` (подмена LLM и похожести в тестах) и в
+`accounts` (весь пул тестируется с фейком Telegram).
 
 ### 6. Цена и граница
 
