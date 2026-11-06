@@ -8,6 +8,9 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 TS = sa.DateTime(timezone=True)
 
+# Снимок стартовых требований на момент миграции (дальше — версии через /setreq).
+from radar.screening.requirements_default import DEFAULT_REQUIREMENTS  # noqa: E402
+
 revision = "0001"
 down_revision = None
 branch_labels = None
@@ -69,9 +72,26 @@ def upgrade() -> None:
         sa.Column("seen_at", TS, nullable=False),
     )
     op.create_index("ix_messages_seen_at", "messages", ["seen_at"])
+    req = op.create_table(
+        "requirements",
+        sa.Column("version", sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column("text", sa.Text, nullable=False),
+        sa.Column("created_at", TS, nullable=False, server_default=sa.func.now()),
+    )
+    op.bulk_insert(req, [{"version": 1, "text": DEFAULT_REQUIREMENTS}])
+    op.create_table(
+        "daily_stats",
+        sa.Column("day", sa.Date, primary_key=True),
+        *(sa.Column(c, sa.BigInteger, nullable=False, server_default="0") for c in (
+            "read", "passed_prefilter", "llm_items", "findings", "requests",
+            "prompt_tokens", "completion_tokens", "reserved",
+        )),
+    )
 
 
 def downgrade() -> None:
+    op.drop_table("daily_stats")
+    op.drop_table("requirements")
     op.drop_table("messages")
     op.drop_table("sources")
     op.drop_table("accounts")

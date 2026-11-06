@@ -50,6 +50,22 @@ sources = sa.Table(
     sa.Index("ix_sources_assigned", "assigned_account_id", "kind"),
 )
 
+requirements = sa.Table(
+    "requirements", metadata,
+    sa.Column("version", sa.Integer, primary_key=True, autoincrement=False),
+    sa.Column("text", sa.Text, nullable=False),
+    sa.Column("created_at", TS, nullable=False, server_default=sa.func.now()),
+)
+
+daily_stats = sa.Table(
+    "daily_stats", metadata,
+    sa.Column("day", sa.Date, primary_key=True),
+    *(sa.Column(c, sa.BigInteger, nullable=False, server_default="0") for c in (
+        "read", "passed_prefilter", "llm_items", "findings", "requests",
+        "prompt_tokens", "completion_tokens", "reserved",
+    )),
+)
+
 messages = sa.Table(
     "messages", metadata,
     sa.Column("source_id", sa.BigInteger, primary_key=True),

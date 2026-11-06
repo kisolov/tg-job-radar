@@ -31,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
     sadd.add_argument("links", nargs="+")
     ssearch = src.add_parser("search", help="глобальный поиск Telegram; находки → кандидаты")
     ssearch.add_argument("queries", nargs="+", help="запросы (каждый в кавычках)")
+
+    llm = groups.add_parser("llm", help="модель NeuroAPI").add_subparsers(dest="cmd", required=True)
+    llm.add_parser("models", help="список моделей NeuroAPI")
+    probe = llm.add_parser("probe", help="6 эталонных сообщений на каждой модели; выбрать самую дешёвую с 6/6")
+    probe.add_argument("models", nargs="*", help="модели (по умолчанию NEUROAPI_MODEL)")
     return parser
 
 
@@ -40,7 +45,26 @@ async def run(argv: list[str], container) -> int:
         return await _accounts(args, container)
     if args.group == "sources":
         return await _sources(args, container)
+    if args.group == "llm":
+        return await _llm(args, container)
     return 2
+
+
+async def _llm(args, c) -> int:
+    if args.cmd == "models":
+        for m in await c.classifier().list_models():
+            print(m)
+        return 0
+    s = c.settings()
+    ok = 0
+    for model in args.models or [s.NEUROAPI_MODEL]:
+        r = await c.probe_model().execute(model)
+        cost = (r.usage.prompt_tokens * s.LLM_PRICE_PER_1K_PROMPT
+                + r.usage.completion_tokens * s.LLM_PRICE_PER_1K_COMPLETION) / 1000
+        print(f"{model}: {r.correct}/{r.total}  ошибки: {', '.join(r.wrong) or '—'}  "
+              f"токены {r.usage.prompt_tokens}+{r.usage.completion_tokens}  ≈{cost:.4f}")
+        ok += r.correct == r.total
+    return 0 if ok else 1
 
 
 async def _sources(args, c) -> int:

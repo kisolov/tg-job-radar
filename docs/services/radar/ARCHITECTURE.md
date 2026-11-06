@@ -11,7 +11,20 @@
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
 | `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
-| `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции) |
+| `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции); usecases (`ProbeModel`, `ClassifyPending`) → `ScreeningService` (оценка пакета, бюджет) → порты `LlmClassifier` (NeuroAPI / фейк), `UsageRepository`, `RequirementsRepository` |
+
+### screening — LLM
+
+- `NeuroApiClassifier`: `POST {NEUROAPI_BASE_URL}/chat/completions`, `temperature=0`, `response_format=json_object`;
+  system = инструкция + текущие требования; user = JSON `[{"id","text"}]` (текст обрезан до `LLM_MAX_CHARS`).
+  Ответ `{"items":[{"id","relevant","kind","summary","money","format","contact","reason"}]}`. Невалидный ответ,
+  5xx, таймаут → один повтор → `LlmUnavailable`. Элементы с чужим id или без булева `relevant` отбрасываются
+  (их сообщения остаются `pending`). Модель и `max_chars` можно переопределить на вызов (`/set`).
+- Бюджет: оценка пакета = символы/3 + 400; `reserve` атомарно проверяет факт+резерв+оценка ≤
+  `LLM_DAILY_TOKEN_LIMIT`; после ответа `commit_usage` меняет резерв на факт. Лимит исчерпан → алерт раз в сутки.
+- Требования версионируются (`requirements`), версия 1 — из спека (раздел 4), сидится миграцией.
+- `radar llm models` — список моделей NeuroAPI; `radar llm probe M1 M2 …` — 6 эталонных сообщений
+  (`screening/probe_samples.json`) на каждой модели, выбрать самую дешёвую с 6/6.
 
 ### screening — предфильтр
 
@@ -61,5 +74,7 @@ PostgreSQL, одна схема. Таблицы описаны в `src/radar/sha
 |---|---|
 | `settings_overrides(key, value)` | настройки, перекрывающие env (меняются командой бота `/set`) |
 | `accounts` | пул аккаунтов: шифрованные секреты, статус, `membership_count`, `join_state`/`resolve_state` (JSONB-снимок `Pacer`), `version` |
+| `requirements(version, text, created_at)` | версии текста требований для LLM |
+| `daily_stats(day, …)` | счётчики суток: read, passed_prefilter, llm_items, findings, requests, prompt/completion_tokens, reserved |
 | `messages(source_id, message_id, seen_at)` | журнал виденных сообщений (R2), чистится старше `MESSAGES_RETENTION_DAYS` |
 | `sources` | каталог: ключи (`username`/`invite_hash`/`peer_id`, все unique), тип, статус, закрепление, курсор опроса, статистика |

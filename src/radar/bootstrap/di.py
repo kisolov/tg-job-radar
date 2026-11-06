@@ -14,6 +14,10 @@ from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts,
 from radar.ingest.adapters.sqlalchemy_log import SqlAlchemyMessageLog
 from radar.ingest.adapters.telethon_gateway import TelethonGatewayFactory
 from radar.ingest.usecases import SearchSources
+from radar.screening.adapters.neuroapi_classifier import NeuroApiClassifier
+from radar.screening.adapters.sqlalchemy_repos import SqlAlchemyRequirementsRepository, SqlAlchemyUsageRepository
+from radar.screening.service import ScreeningService
+from radar.screening.usecases import ProbeModel
 from radar.shared.clock import SystemClock
 from radar.shared.db import make_engine, make_session_factory
 from radar.shared.settings import Settings
@@ -70,3 +74,13 @@ class Container(containers.DeclarativeContainer):
         SearchSources, accounts=account_repo, account_service=account_service, sources=source_repo,
         gateway_factory=gateway_factory, clock=clock,
     )
+
+    # screening
+    classifier = providers.Singleton(
+        NeuroApiClassifier, base_url=settings.provided.NEUROAPI_BASE_URL, key=settings.provided.NEUROAPI_KEY,
+        model=settings.provided.NEUROAPI_MODEL, max_chars=settings.provided.LLM_MAX_CHARS,
+    )
+    usage_repo = providers.Singleton(SqlAlchemyUsageRepository, sf=sessions)
+    requirements_repo = providers.Singleton(SqlAlchemyRequirementsRepository, sf=sessions)
+    screening_service = providers.Singleton(ScreeningService, usage=usage_repo, alerts=alerts, clock=clock)
+    probe_model = providers.Factory(ProbeModel, classifier=classifier, requirements=requirements_repo)
