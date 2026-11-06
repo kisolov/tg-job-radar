@@ -10,6 +10,7 @@
 | `shared` | настройки, БД, часы | — |
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
 | `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
+| `findings` | что считать одной находкой | usecases (`ClusterMessage` — `MessageSink` конвейера, `DeliverAccepted`, `RedeliverStale`) → `FindingService` → `FindingRepository`; `similarity.py`, `events.py` (`CopyAttached`, `InProcessEventBus`) |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
 | `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции); usecases (`ProbeModel`, `ClassifyPending`) → `ScreeningService` (оценка пакета, бюджет) → порты `LlmClassifier` (NeuroAPI / фейк), `UsageRepository`, `RequirementsRepository` |
 
@@ -33,6 +34,14 @@
 < 200 символов **или** нет контакта `@username`/t.me) → `short` (< `PREFILTER_MIN_LEN`) → `not_russian` (кириллица < 50 %
 букв, ссылки и упоминания не считаются) → `stopword` → `no_marker` → `pass`. Слова сравниваются с начала слова,
 короткие (≤ 3 символа: «тз», «зп») — целиком; «ё» = «е».
+
+### findings
+
+- `normalize`: нижний регистр, ё→е, без ссылок, @упоминаний, хэштегов, пунктуации и эмодзи. Отпечаток — sha1
+  нормализованного текста; шинглы — crc32 символьных 5-грамм (стабильны между процессами, лежат в БД).
+- Кластер: тот же отпечаток за `DEDUP_WINDOW_DAYS` → иначе Жаккар ≥ `DEDUP_JACCARD` (кандидаты отсекаются по числу
+  шинглов: min/max ≥ порога) → иначе новый `pending`. Копия `(source_id, message_id)` пишется всегда.
+- Статусы: `pending → accepted | rejected` (LLM) → `delivering` (claim) → `delivered`.
 
 ### sources
 
@@ -76,5 +85,7 @@ PostgreSQL, одна схема. Таблицы описаны в `src/radar/sha
 | `accounts` | пул аккаунтов: шифрованные секреты, статус, `membership_count`, `join_state`/`resolve_state` (JSONB-снимок `Pacer`), `version` |
 | `requirements(version, text, created_at)` | версии текста требований для LLM |
 | `daily_stats(day, …)` | счётчики суток: read, passed_prefilter, llm_items, findings, requests, prompt/completion_tokens, reserved |
+| `findings` | кластеры дублей: отпечаток, шинглы, снимок первой копии, классификация (JSONB), статус, claim, `bot_message_id` |
+| `finding_copies(source_id, message_id)` | где встречалась находка (для «Также в») |
 | `messages(source_id, message_id, seen_at)` | журнал виденных сообщений (R2), чистится старше `MESSAGES_RETENTION_DAYS` |
 | `sources` | каталог: ключи (`username`/`invite_hash`/`peer_id`, все unique), тип, статус, закрепление, курсор опроса, статистика |

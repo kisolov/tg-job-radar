@@ -66,6 +66,40 @@ daily_stats = sa.Table(
     )),
 )
 
+findings = sa.Table(
+    "findings", metadata,
+    sa.Column("id", sa.BigInteger, sa.Identity(), primary_key=True),
+    sa.Column("fingerprint", sa.Text, nullable=False),
+    sa.Column("shingles", sa.LargeBinary, nullable=False),
+    sa.Column("shingle_count", sa.Integer, nullable=False),
+    sa.Column("text_snapshot", sa.Text, nullable=False),
+    sa.Column("link_snapshot", sa.Text, nullable=False),
+    sa.Column("sender_username", sa.Text),
+    sa.Column("sender_id", sa.BigInteger),
+    sa.Column("sender_is_user", sa.Boolean, nullable=False),
+    sa.Column("status", sa.Text, nullable=False),
+    sa.Column("classification", JSONB),
+    sa.Column("requirements_version", sa.Integer),
+    sa.Column("claimed_at", TS),
+    sa.Column("delivered_at", TS),
+    sa.Column("bot_message_id", sa.BigInteger),
+    sa.Column("created_at", TS, nullable=False),
+    sa.Index("ix_findings_fp", "fingerprint", "created_at"),
+    sa.Index("ix_findings_window", "created_at", "shingle_count"),
+    sa.Index("ix_findings_status", "status", "created_at"),
+)
+
+finding_copies = sa.Table(
+    "finding_copies", metadata,
+    sa.Column("finding_id", sa.BigInteger, sa.ForeignKey("findings.id", ondelete="CASCADE"), nullable=False),
+    sa.Column("source_id", sa.BigInteger, primary_key=True),
+    sa.Column("message_id", sa.BigInteger, primary_key=True),
+    sa.Column("link", sa.Text, nullable=False),
+    sa.Column("source_title", sa.Text),
+    sa.Column("created_at", TS, nullable=False, server_default=sa.func.now()),
+    sa.Index("ix_finding_copies_finding", "finding_id"),
+)
+
 messages = sa.Table(
     "messages", metadata,
     sa.Column("source_id", sa.BigInteger, primary_key=True),
