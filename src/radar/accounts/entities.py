@@ -17,6 +17,19 @@ class AccountStatus(str, Enum):
 
 
 @dataclass(frozen=True)
+class DeviceProfile:
+    device_model: str | None = None
+    system_version: str | None = None
+    app_version: str | None = None
+    lang_code: str | None = None
+    system_lang_code: str | None = None
+
+    def as_client_kwargs(self) -> dict[str, str]:
+        # Не заданное поле не передаём вовсе — иначе Telethon затрёт свой дефолт значением None.
+        return {k: v for k, v in self.__dict__.items() if v is not None}
+
+
+@dataclass(frozen=True)
 class PacingPolicy:
     daily_min: int
     daily_max: int
