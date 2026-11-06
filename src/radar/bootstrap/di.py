@@ -14,6 +14,9 @@ from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts,
 from radar.shared.clock import SystemClock
 from radar.shared.db import make_engine, make_session_factory
 from radar.shared.settings import Settings
+from radar.sources.adapters.sqlalchemy_repo import SqlAlchemySourceRepository
+from radar.sources.service import SourceService
+from radar.sources.usecases import AddSource, AssignWork, ImportSeeds, ReleaseAccountSources, RemoveSource
 
 
 class Container(containers.DeclarativeContainer):
@@ -45,3 +48,14 @@ class Container(containers.DeclarativeContainer):
     login_account = providers.Factory(LoginAccount, importer=import_account, login_session=interactive_login)
     list_accounts = providers.Factory(ListAccounts, accounts=account_repo)
     disable_account = providers.Factory(DisableAccount, accounts=account_repo, service=account_service)
+
+    # sources
+    source_repo = providers.Singleton(
+        SqlAlchemySourceRepository, sf=sessions, membership_cap=settings.provided.MEMBERSHIP_CAP
+    )
+    source_service = providers.Singleton(SourceService, sources=source_repo, accounts=account_repo)
+    add_source = providers.Factory(AddSource, service=source_service)
+    remove_source = providers.Factory(RemoveSource, service=source_service)
+    import_seeds = providers.Factory(ImportSeeds, service=source_service)
+    assign_work = providers.Factory(AssignWork, service=source_service)
+    release_account_sources = providers.Factory(ReleaseAccountSources, service=source_service)

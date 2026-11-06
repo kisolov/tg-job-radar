@@ -9,6 +9,18 @@
 |---|---|---|
 | `shared` | настройки, БД, часы | — |
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
+| `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
+
+### sources
+
+- Ключ каталога — `normalize_username`: `username` в нижнем регистре или `+invite`. Боты и служебные пути t.me
+  отбрасываются. `extract_chat_links` берёт из текста только t.me-ссылки (`@упоминания` — почти всегда
+  контакт человека).
+- Статусы: `candidate → (resolve) → active | dead | rejected`.
+- `AssignWork`: свободные `active` группы и каналы → наименее загруженному `active` аккаунту (группы — по
+  `membership_count`, каналы — по числу закреплённых каналов). Каналы не тратят лимит членства.
+- Владелец добавляет с priority 10, стартовый список — 10 (строка с `!`) или 5.
+- CLI: `radar sources import FILE | add LINK…`.
 
 ### accounts
 
@@ -39,3 +51,4 @@ PostgreSQL, одна схема. Таблицы описаны в `src/radar/sha
 |---|---|
 | `settings_overrides(key, value)` | настройки, перекрывающие env (меняются командой бота `/set`) |
 | `accounts` | пул аккаунтов: шифрованные секреты, статус, `membership_count`, `join_state`/`resolve_state` (JSONB-снимок `Pacer`), `version` |
+| `sources` | каталог: ключи (`username`/`invite_hash`/`peer_id`, все unique), тип, статус, закрепление, курсор опроса, статистика |

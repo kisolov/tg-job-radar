@@ -23,6 +23,12 @@ def build_parser() -> argparse.ArgumentParser:
     acc.add_parser("list", help="список аккаунтов")
     dis = acc.add_parser("disable", help="отключить аккаунт")
     dis.add_argument("phone")
+
+    src = groups.add_parser("sources", help="каталог источников").add_subparsers(dest="cmd", required=True)
+    simp = src.add_parser("import", help="импорт стартового списка (строка: [!]@name | t.me/...)")
+    simp.add_argument("file", type=Path)
+    sadd = src.add_parser("add", help="добавить источники (ссылки через пробел)")
+    sadd.add_argument("links", nargs="+")
     return parser
 
 
@@ -30,7 +36,19 @@ async def run(argv: list[str], container) -> int:
     args = build_parser().parse_args(argv)
     if args.group == "accounts":
         return await _accounts(args, container)
+    if args.group == "sources":
+        return await _sources(args, container)
     return 2
+
+
+async def _sources(args, c) -> int:
+    if args.cmd == "import":
+        r = await c.import_seeds().execute(args.file)
+        print(f"добавлено {r.added}, дублей {r.duplicates}, нераспознано {r.invalid}")
+    elif args.cmd == "add":
+        r = await c.add_source().execute(" ".join(args.links))
+        print(f"добавлено: {', '.join(r.added) or '—'}; уже были: {', '.join(r.duplicates) or '—'}")
+    return 0
 
 
 async def _accounts(args, c) -> int:
