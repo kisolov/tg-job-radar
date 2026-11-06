@@ -11,6 +11,15 @@
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
 | `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
+| `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции) |
+
+### screening — предфильтр
+
+Порядок проверок (первая сработавшая — вердикт): `empty` (нет текста; подпись медиа считается текстом) →
+`aggregator_only` (ссылка на домен из `AGGREGATOR_DOMAINS`, включая поддомены, и остаток без ссылок/хэштегов/эмодзи
+< 200 символов **или** нет контакта `@username`/t.me) → `short` (< `PREFILTER_MIN_LEN`) → `not_russian` (кириллица < 50 %
+букв, ссылки и упоминания не считаются) → `stopword` → `no_marker` → `pass`. Слова сравниваются с начала слова,
+короткие (≤ 3 символа: «тз», «зп») — целиком; «ё» = «е».
 
 ### sources
 
