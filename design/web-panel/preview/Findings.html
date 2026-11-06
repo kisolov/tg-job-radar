@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Находки — tg-job-radar</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+
+</head>
+<body>
+
+
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Обзор</a>
+        <a href="Findings.html" aria-current="page" style="padding: 8px 14px; border-radius: 8px; background: #EAF0FC; color: #16479E; font-weight: 600">Находки</a>
+        <a href="Sources.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Источники</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600; font-size: 13px">
+          <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#1E7A4F"></circle></svg>Доставка идёт
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Находки</h1>
+      <span style="color: #5B6370">всё, что прошло предфильтр, — с решением LLM</span>
+    </div>
+
+    <form role="search" aria-label="Фильтр находок" style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <label style="flex: 1 1 280px; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid #C9CED8; border-radius: 8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6370" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Поиск по тексту</span>
+        <input type="search" placeholder="Поиск: fastapi, бот, @контакт…" style="flex: 1; min-width: 0; border: 0; outline: none; font: inherit; background: transparent; color: #14171C">
+      </label>
+      <div role="group" aria-label="Решение" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; background: #EEF0F4; border-radius: 9px">
+        
+          <button type="button" aria-pressed="false" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; color: #3D4552">Все <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">214</span></button>
+        
+          <button type="button" aria-pressed="true" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: #FFFFFF; color: #14171C">Доставлены <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">61</span></button>
+        
+          <button type="button" aria-pressed="false" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; color: #3D4552">В очереди <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">1</span></button>
+        
+          <button type="button" aria-pressed="false" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; color: #3D4552">Ждут LLM <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">3</span></button>
+        
+          <button type="button" aria-pressed="false" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; color: #3D4552">Отклонены <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">149</span></button>
+        
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Тип
+        <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C">
+          <option>Все</option><option>Вакансии</option><option>Проекты</option>
+        </select>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Период
+        <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C">
+          <option>Сегодня</option><option selected>7 дней</option><option>30 дней</option>
+        </select>
+      </label>
+    </form>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+      <section aria-label="Список находок" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        
+          <article style="background: #FFFFFF; border: 2px solid #1F5FD1; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>сегодня 13:02 · Python Jobs</span>
+              <span style="margin-left: auto">ещё в 3 чатах</span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">Python-бэкенд (FastAPI, PostgreSQL) в маркетплейс, удалённо</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>250–300 тыс. ₽</span><span>удалёнка</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">@hr_anna</span>
+            </div>
+          </article>
+        
+          <article style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #FDF0E1; color: #8A4B08; font-weight: 600">Проект</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>сегодня 14:18 · Фриланс IT</span>
+              <span style="margin-left: auto"></span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">Telegram-бот записи в барбершоп с оплатой ЮKassa</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>40–60 тыс. ₽</span><span>разовый проект</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">@sergey_barber</span>
+            </div>
+          </article>
+        
+          <article style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>сегодня 11:47 · Vue.js Russia</span>
+              <span style="margin-left: auto">ещё в 1 чате</span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">Frontend Vue 3 / Nuxt для личного кабинета</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>почасовая</span><span>проект, удалённо</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">t.me/dev_lead_ivan</span>
+            </div>
+          </article>
+        
+          <article style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #FDF0E1; color: #8A4B08; font-weight: 600">Проект</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>сегодня 09:30 · Заказы на разработку</span>
+              <span style="margin-left: auto"></span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">Парсер маркетплейсов с выгрузкой в Google Sheets</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>бюджет не указан</span><span>—</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">профиль автора</span>
+            </div>
+          </article>
+        
+          <article style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>вчера 19:55 · Удалёнка IT</span>
+              <span style="margin-left: auto">ещё в 5 чатах</span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">Fullstack Django + React в EdTech, part-time</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>180–220 тыс. ₽</span><span>удалёнка, 25 ч/нед</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">@cto_marina</span>
+            </div>
+          </article>
+        
+          <article style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: #FDF0E1; color: #8A4B08; font-weight: 600">Проект</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена</span>
+              <span>вчера 16:12 · Боты на заказ</span>
+              <span style="margin-left: auto"></span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">RAG-ассистент по базе знаний для отдела продаж</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>120 тыс. ₽</span><span>проект, 1 месяц</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">@pm_oleg</span>
+            </div>
+          </article>
+        
+        <div style="display: flex; justify-content: center; padding-top: 6px">
+          <button type="button" style="min-height: 40px; padding: 0 18px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer">Показать ещё</button>
+        </div>
+      </section>
+
+      <article aria-label="Выбранная находка" style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 22px 24px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+            <span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>
+            <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена в бота 13:02</span>
+            <span>требования v3</span>
+          </div>
+          <h2 style="margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em">Python-бэкенд (FastAPI, PostgreSQL) в маркетплейс, удалённо</h2>
+        </div>
+
+        <dl style="margin: 0; display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px 16px">
+          <dt style="color: #5B6370">Деньги</dt><dd style="margin: 0">250–300 тыс. ₽</dd>
+          <dt style="color: #5B6370">Формат</dt><dd style="margin: 0">удалёнка, частичная занятость 20–30 ч/нед</dd>
+          <dt style="color: #5B6370">Контакт</dt><dd style="margin: 0"><a href="https://t.me/hr_anna">@hr_anna</a></dd>
+          <dt style="color: #5B6370">Почему подходит</dt><dd style="margin: 0">Python-бэкенд на FastAPI, удалёнка, middle+</dd>
+          <dt style="color: #5B6370">Оригинал</dt><dd style="margin: 0"><a href="https://t.me/ru_pythonjobs/8032">Python Jobs · сообщение 8032</a></dd>
+        </dl>
+
+        <section style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600">Текст сообщения</h3>
+          <div style="background: #F7F8FA; border: 1px solid #EEF0F4; border-radius: 10px; padding: 14px 16px; white-space: pre-line; color: #262B33">Ищем Python-разработчика (FastAPI, PostgreSQL, asyncio) в продуктовую команду маркетплейса.
+Полная удалёнка, можно частичную занятость 20–30 ч/нед. Middle+.
+Задачи: API каталога и заказов, интеграции с платёжными системами.
+Вилка 250–300 тыс. ₽. Писать @hr_anna</div>
+        </section>
+
+        <section style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600">Встречалось также в <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">3</span></h3>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px">
+            
+              <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid #EEF0F4; border-radius: 8px">
+                <a href="https://t.me/remote_it">Удалёнка IT</a><span style="color: #5B6370; font-size: 13px">сегодня 13:20</span>
+              </li>
+            
+              <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid #EEF0F4; border-radius: 8px">
+                <a href="https://t.me/backend_jobs">Вакансии backend</a><span style="color: #5B6370; font-size: 13px">сегодня 13:41</span>
+              </li>
+            
+              <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid #EEF0F4; border-radius: 8px">
+                <a href="https://t.me/ru_python">Python Russia (чат)</a><span style="color: #5B6370; font-size: 13px">сегодня 14:05</span>
+              </li>
+            
+          </ul>
+        </section>
+      </article>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обзор — tg-job-radar</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+
+</head>
+<body>
+
+
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.html" aria-current="page" style="padding: 8px 14px; border-radius: 8px; background: #EAF0FC; color: #16479E; font-weight: 600">Обзор</a>
+        <a href="Findings.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Находки</a>
+        <a href="Sources.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Источники</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600; font-size: 13px">
+          <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#1E7A4F"></circle></svg>Доставка идёт
+        </span>
+        <button type="button" style="min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; color: #14171C; font: inherit; font-weight: 600; cursor: pointer">Поставить на паузу</button>
+        <span style="color: #5B6370; font-size: 13px">обновлено 14:32</span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Сегодня</h1>
+      <span style="color: #5B6370">6 ноября, сутки UTC</span>
+    </div>
+
+    <section aria-label="Показатели за сутки" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Прочитано сообщений</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">18 432</span>
+          <span style="color: #5B6370; font-size: 12px">из 1 486 источников</span>
+        </div>
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Прошло предфильтр</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">642</span>
+          <span style="color: #5B6370; font-size: 12px">3,5 % прочитанного</span>
+        </div>
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Уникальных (без дублей)</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">214</span>
+          <span style="color: #5B6370; font-size: 12px">428 копий склеено</span>
+        </div>
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Ушло в LLM</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">211</span>
+          <span style="color: #5B6370; font-size: 12px">38 пакетов</span>
+        </div>
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Находок доставлено</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">9</span>
+          <span style="color: #5B6370; font-size: 12px">ещё 1 ждёт отправки</span>
+        </div>
+      
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">Стоимость LLM</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">≈ $0,31</span>
+          <span style="color: #5B6370; font-size: 12px">412 тыс. токенов</span>
+        </div>
+      
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Конвейер за сутки</h2>
+            <span style="color: #5B6370; font-size: 13px">от прочитанного до карточки в боте</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Прочитано</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 100%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">18 432</span>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Прошло предфильтр</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 24%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">642</span>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Уникальных</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 12%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">214</span>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Классифицировано</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 11.8%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">211</span>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Подошло</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 3%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">10</span>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">Доставлено</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: 2.7%; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">9</span>
+              </div>
+            
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Парсеры</h2>
+            <span style="color: #5B6370; font-size: 13px">4 аккаунта · 2 читают · лимит групп 500 на аккаунт</span>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13.5px">
+              <thead>
+                <tr style="text-align: left; color: #5B6370; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Аккаунт</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Статус</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Групп</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Вступлений сегодня</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Темп</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Каналов на опросе</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Последнее событие</th>
+                </tr>
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">+7 900 ••• 12 34</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: #E7F4EC; color: #17633F">Читает</span>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <div style="width: 70px; height: 6px; background: #EEF0F4; border-radius: 3px; overflow: hidden"><div style="height: 100%; width: 42%; background: #1F5FD1"></div></div>
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">212 / 500</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">18 / 27</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">×1,0 · норма</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">403</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">вступил в @pyjobs_chat, 14:21</td>
+                  </tr>
+                
+                  <tr>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">+7 901 ••• 56 78</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: #E7F4EC; color: #17633F">Читает</span>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <div style="width: 70px; height: 6px; background: #EEF0F4; border-radius: 3px; overflow: hidden"><div style="height: 100%; width: 29%; background: #1F5FD1"></div></div>
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">143 / 500</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">22 / 25</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">×1,5 · FloodWait 3 ч назад</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">396</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">FloodWait 340 с на вступлении, 11:05</td>
+                  </tr>
+                
+                  <tr>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">+7 902 ••• 90 12</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: #FDF0E1; color: #8A4B08">Пауза до 16:40</span>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <div style="width: 70px; height: 6px; background: #EEF0F4; border-radius: 3px; overflow: hidden"><div style="height: 100%; width: 19%; background: #1F5FD1"></div></div>
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">97 / 500</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">6 / 20</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">×2,3 · торможение</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">—</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">FloodWait 2 ч 10 мин на резолве, 14:30</td>
+                  </tr>
+                
+                  <tr>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">+7 903 ••• 34 56</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: #FCE8E6; color: #9B1C14">Забанен</span>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <div style="width: 70px; height: 6px; background: #EEF0F4; border-radius: 3px; overflow: hidden"><div style="height: 100%; width: 0%; background: #1F5FD1"></div></div>
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">0 / 500</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">—</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">—</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">—</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">UserDeactivatedBan, 3 ноя · группы переданы</td>
+                  </tr>
+                
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Находки за 7 дней</h2>
+            <span style="color: #5B6370; font-size: 13px">доставлено в бота по дням</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: end; height: 160px">
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">6</span>
+                <div style="width: 100%; max-width: 48px; height: 55px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">31.10</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">9</span>
+                <div style="width: 100%; max-width: 48px; height: 83px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">1.11</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">4</span>
+                <div style="width: 100%; max-width: 48px; height: 37px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">2.11</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">11</span>
+                <div style="width: 100%; max-width: 48px; height: 102px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">3.11</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">8</span>
+                <div style="width: 100%; max-width: 48px; height: 74px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">4.11</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">13</span>
+                <div style="width: 100%; max-width: 48px; height: 120px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">5.11</span>
+              </div>
+            
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">9</span>
+                <div style="width: 100%; max-width: 48px; height: 83px; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">6.11</span>
+              </div>
+            
+          </div>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">LLM</h2>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Модель</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">gpt-4o-mini</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Токены сегодня</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">412 тыс. из 2 млн</span></div>
+            <div style="height: 8px; background: #EEF0F4; border-radius: 4px; overflow: hidden"><div style="height: 100%; width: 21%; background: #1F5FD1"></div></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Запросов</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">38</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Пакет / ожидание</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">10 · 60 с</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Ждут классификации</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">3</span></div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Последние находки</h2>
+            <a href="Findings.html" style="font-size: 13px; font-weight: 600">Все находки</a>
+          </div>
+          
+            <a href="Findings.html" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #EEF0F4; border-radius: 10px; color: #14171C; text-decoration: none">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B6370"><span style="padding: 2px 8px; border-radius: 999px; background: #FDF0E1; color: #8A4B08; font-weight: 600">Проект</span>14:18 · Фриланс IT</span>
+              <span style="font-weight: 600">Telegram-бот записи в барбершоп с оплатой ЮKassa</span>
+              <span style="color: #3D4552; font-size: 13px">40–60 тыс. ₽ · @sergey_barber</span>
+            </a>
+          
+            <a href="Findings.html" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #EEF0F4; border-radius: 10px; color: #14171C; text-decoration: none">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B6370"><span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>13:02 · Python Jobs</span>
+              <span style="font-weight: 600">Python-бэкенд (FastAPI) в маркетплейс, удалённо</span>
+              <span style="color: #3D4552; font-size: 13px">250–300 тыс. ₽ · @hr_anna · ещё в 3 чатах</span>
+            </a>
+          
+            <a href="Findings.html" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #EEF0F4; border-radius: 10px; color: #14171C; text-decoration: none">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B6370"><span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>11:47 · Vue.js Russia</span>
+              <span style="font-weight: 600">Frontend Vue 3 / Nuxt, проектная занятость</span>
+              <span style="color: #3D4552; font-size: 13px">почасовая · t.me/dev_lead_ivan</span>
+            </a>
+          
+            <a href="Findings.html" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #EEF0F4; border-radius: 10px; color: #14171C; text-decoration: none">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B6370"><span style="padding: 2px 8px; border-radius: 999px; background: #FDF0E1; color: #8A4B08; font-weight: 600">Проект</span>09:30 · Заказы на разработку</span>
+              <span style="font-weight: 600">Парсер маркетплейсов + выгрузка в Google Sheets</span>
+              <span style="color: #3D4552; font-size: 13px">бюджет не указан · профиль автора</span>
+            </a>
+          
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Источники</h2>
+            <a href="Sources.html" style="font-size: 13px; font-weight: 600">Открыть</a>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Читаются</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">1 486</span>
+              </div>
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Ждут резолва</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">386</span>
+              </div>
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Ждут вступления</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">58</span>
+              </div>
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Мёртвые</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">41</span>
+              </div>
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Отсеяны</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">117</span>
+              </div>
+            
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">Найдено автопоиском</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">+23 сегодня</span>
+              </div>
+            
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
