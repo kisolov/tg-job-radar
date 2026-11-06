@@ -1,0 +1,7 @@
+.venv
+.claude
+.superpowers
+.env
+**/__pycache__
+tests
+docs
