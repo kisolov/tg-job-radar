@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Источники — tg-job-radar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Обзор</a>
+        <a href="Findings.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Находки</a>
+        <a href="Sources.dc.html" aria-current="page" style="padding: 8px 14px; border-radius: 8px; background: #EAF0FC; color: #16479E; font-weight: 600">Источники</a>
+      </nav>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Источники</h1>
+      <form style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 520px">
+        <label style="flex: 1 1 280px; display: flex">
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ссылки на чаты</span>
+          <input type="text" placeholder="t.me/chat, @channel — можно несколько" style="flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; color: #14171C">
+        </label>
+        <button type="submit" style="min-height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #1F5FD1; color: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer">Добавить</button>
+      </form>
+    </div>
+
+    <section aria-label="Источники по статусам" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+      <sc-for list="{{stats}}" as="s" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5B6370; font-size: 13px">{{s.label}}</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; font-weight: 500">{{s.value}}</span>
+          <span style="color: #5B6370; font-size: 12px">{{s.hint}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+        <div role="group" aria-label="Статус" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; background: #EEF0F4; border-radius: 9px">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+            <button type="button" aria-pressed="{{t.pressed}}" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: {{t.bg}}; color: {{t.fg}}">{{t.label}}</button>
+          </sc-for>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Тип
+          <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C"><option>Все</option><option>Группы</option><option>Каналы</option></select>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Сортировка
+          <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C"><option>По находкам</option><option>По прочитанному</option><option>Новые</option></select>
+        </label>
+      </div>
+
+      <div style="overflow-x: auto">
+        <table style="width: 100%; min-width: 980px; border-collapse: collapse; font-size: 13.5px">
+          <thead>
+            <tr style="text-align: left; color: #5B6370; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Источник</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Тип</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Статус</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Читает</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA; text-align: right">Находок</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA; text-align: right">Прочитано</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA; text-align: right">Прошло предфильтр</th>
+              <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Откуда</th>
+              <th style="padding: 8px 10px; border-bottom: 1px solid #E1E4EA"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Действия</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+              <tr>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4">
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-weight: 600">{{r.title}}</span>
+                    <a href="{{r.link}}" style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">{{r.ref}}</a>
+                  </div>
+                </td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">{{r.kind}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4">
+                  <span style="padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: {{r.stBg}}; color: {{r.stFg}}">{{r.status}}</span>
+                </td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px; color: #3D4552">{{r.account}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">{{r.found}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">{{r.read}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">{{r.passed}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">{{r.origin}}</td>
+                <td style="padding: 11px 10px; border-bottom: 1px solid #EEF0F4; text-align: right">
+                  <button type="button" aria-label="Убрать источник" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #E1E4EA; background: #FFFFFF; cursor: pointer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6370" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>
+                  </button>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; color: #5B6370; font-size: 13px">
+        <span>1–10 из 1 486</span>
+        <div style="display: flex; gap: 6px">
+          <button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; font: inherit; cursor: pointer">Назад</button>
+          <button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; font: inherit; cursor: pointer">Дальше</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = {
+      active: ['Читается', '#E7F4EC', '#17633F'],
+      join: ['Ждёт вступления', '#EAF0FC', '#16479E'],
+      cand: ['Ждёт резолва', '#FDF0E1', '#8A4B08'],
+      dead: ['Мёртвый', '#FCE8E6', '#9B1C14'],
+      rej: ['Отсеян', '#EEF0F4', '#3D4552'],
+    };
+    const row = (title, ref, kind, s, account, found, read, passed, origin) => ({
+      title, ref: '@' + ref, link: 'https://t.me/' + ref, kind, status: st[s][0], stBg: st[s][1], stFg: st[s][2],
+      account, found, read, passed, origin,
+    });
+    const tab = (label, on) => ({ label, pressed: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#14171C' : '#3D4552' });
+    return {
+      stats: [
+        { label: 'Читаются', value: '1 486', hint: '312 групп · 1 174 канала' },
+        { label: 'Ждут вступления', value: '58', hint: '≈ 1 день при текущем темпе' },
+        { label: 'Ждут резолва', value: '386', hint: 'в том числе 23 из автопоиска' },
+        { label: 'Мёртвые', value: '41', hint: 'приватные, удалённые, кик' },
+        { label: 'Отсеяны', value: '117', hint: 'не по теме, ретрансляторы hh' },
+        { label: 'Дали находки за 7 дней', value: '38', hint: '2,6 % читаемых' },
+      ],
+      tabs: [tab('Все', false), tab('Читаются', true), tab('Ждут', false), tab('Мёртвые', false), tab('Отсеяны', false)],
+      rows: [
+        row('Python Jobs', 'ru_pythonjobs', 'канал', 'active', '+7 900 ••• 12 34', '14', '1 920', '211', 'стартовый список'),
+        row('Фриланс IT', 'freelance_it_chat', 'группа', 'active', '+7 901 ••• 56 78', '9', '6 410', '402', 'стартовый список'),
+        row('Удалёнка IT', 'remote_it', 'канал', 'active', '+7 900 ••• 12 34', '7', '880', '96', 'стартовый список'),
+        row('Vue.js Russia', 'vuejs_ru', 'группа', 'active', '+7 900 ••• 12 34', '4', '3 105', '58', 'стартовый список'),
+        row('Заказы на разработку', 'dev_orders_ru', 'группа', 'active', '+7 901 ••• 56 78', '3', '512', '44', 'автопоиск'),
+        row('Django Jobs', 'django_jobs', 'канал', 'active', '+7 901 ••• 56 78', '2', '240', '31', 'стартовый список'),
+        row('Боты на заказ', 'bots_orders', 'группа', 'join', '—', '0', '0', '0', 'вы, 5 ноя'),
+        row('IT вакансии (hh)', 'hh_it_feed', 'канал', 'rej', '—', '0', '—', '—', 'автопоиск'),
+        row('Python Russia', 'ru_python', 'группа', 'active', '+7 900 ••• 12 34', '1', '9 870', '37', 'стартовый список'),
+        row('Старый фриланс-чат', 'old_freelance', 'группа', 'dead', '—', '0', '—', '—', 'стартовый список'),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

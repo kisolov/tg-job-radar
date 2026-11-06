@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Обзор — tg-job-radar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.dc.html" aria-current="page" style="padding: 8px 14px; border-radius: 8px; background: #EAF0FC; color: #16479E; font-weight: 600">Обзор</a>
+        <a href="Findings.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Находки</a>
+        <a href="Sources.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Источники</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600; font-size: 13px">
+          <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#1E7A4F"></circle></svg>Доставка идёт
+        </span>
+        <button type="button" style="min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; color: #14171C; font: inherit; font-weight: 600; cursor: pointer">Поставить на паузу</button>
+        <span style="color: #5B6370; font-size: 13px">обновлено 14:32</span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Сегодня</h1>
+      <span style="color: #5B6370">6 ноября, сутки UTC</span>
+    </div>
+
+    <section aria-label="Показатели за сутки" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+      <sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+          <span style="color: #5B6370; font-size: 13px">{{k.label}}</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; font-weight: 500; letter-spacing: -0.02em">{{k.value}}</span>
+          <span style="color: #5B6370; font-size: 12px">{{k.hint}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Конвейер за сутки</h2>
+            <span style="color: #5B6370; font-size: 13px">от прочитанного до карточки в боте</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{funnel}}" as="f" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                <span style="color: #3D4552">{{f.label}}</span>
+                <div style="height: 12px; background: #EEF0F4; border-radius: 6px; overflow: hidden">
+                  <div style="height: 100%; width: {{f.pct}}; background: #1F5FD1; border-radius: 6px"></div>
+                </div>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right">{{f.value}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Парсеры</h2>
+            <span style="color: #5B6370; font-size: 13px">4 аккаунта · 2 читают · лимит групп 500 на аккаунт</span>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13.5px">
+              <thead>
+                <tr style="text-align: left; color: #5B6370; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Аккаунт</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Статус</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Групп</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Вступлений сегодня</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Темп</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Каналов на опросе</th>
+                  <th style="padding: 8px 10px; font-weight: 600; border-bottom: 1px solid #E1E4EA">Последнее событие</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{accounts}}" as="a" hint-placeholder-count="4">
+                  <tr>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">{{a.phone}}</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 600; font-size: 12.5px; background: {{a.badgeBg}}; color: {{a.badgeFg}}">{{a.status}}</span>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <div style="width: 70px; height: 6px; background: #EEF0F4; border-radius: 3px; overflow: hidden"><div style="height: 100%; width: {{a.groupsPct}}; background: #1F5FD1"></div></div>
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">{{a.groups}}</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">{{a.joins}}</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4">{{a.pace}}</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; font-family: 'JetBrains Mono', ui-monospace, monospace">{{a.channels}}</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #EEF0F4; color: #3D4552">{{a.event}}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Находки за 7 дней</h2>
+            <span style="color: #5B6370; font-size: 13px">доставлено в бота по дням</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: end; height: 160px">
+            <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px">{{d.n}}</span>
+                <div style="width: 100%; max-width: 48px; height: {{d.h}}; background: #1F5FD1; border-radius: 6px 6px 2px 2px"></div>
+                <span style="color: #5B6370; font-size: 12px">{{d.day}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">LLM</h2>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Модель</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">gpt-4o-mini</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Токены сегодня</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">412 тыс. из 2 млн</span></div>
+            <div style="height: 8px; background: #EEF0F4; border-radius: 4px; overflow: hidden"><div style="height: 100%; width: 21%; background: #1F5FD1"></div></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Запросов</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">38</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Пакет / ожидание</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">10 · 60 с</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #5B6370">Ждут классификации</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">3</span></div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Последние находки</h2>
+            <a href="Findings.dc.html" style="font-size: 13px; font-weight: 600">Все находки</a>
+          </div>
+          <sc-for list="{{recent}}" as="r" hint-placeholder-count="4">
+            <a href="Findings.dc.html" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #EEF0F4; border-radius: 10px; color: #14171C; text-decoration: none">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B6370"><span style="padding: 2px 8px; border-radius: 999px; background: {{r.kindBg}}; color: {{r.kindFg}}; font-weight: 600">{{r.kind}}</span>{{r.time}} · {{r.source}}</span>
+              <span style="font-weight: 600">{{r.title}}</span>
+              <span style="color: #3D4552; font-size: 13px">{{r.meta}}</span>
+            </a>
+          </sc-for>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Источники</h2>
+            <a href="Sources.dc.html" style="font-size: 13px; font-weight: 600">Открыть</a>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <sc-for list="{{sources}}" as="s" hint-placeholder-count="6">
+              <div style="padding: 10px 12px; background: #F7F8FA; border-radius: 8px; display: flex; flex-direction: column; gap: 2px">
+                <span style="color: #5B6370; font-size: 12.5px">{{s.label}}</span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">{{s.value}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const status = {
+      active: { bg: '#E7F4EC', fg: '#17633F' },
+      flood: { bg: '#FDF0E1', fg: '#8A4B08' },
+      banned: { bg: '#FCE8E6', fg: '#9B1C14' },
+      off: { bg: '#EEF0F4', fg: '#3D4552' },
+    };
+    const acc = (phone, st, label, g, joins, pace, channels, event) => ({
+      phone, status: label, badgeBg: status[st].bg, badgeFg: status[st].fg,
+      groups: g + ' / 500', groupsPct: Math.round(g / 5) + '%', joins, pace, channels, event,
+    });
+    const week = [['31.10', 6], ['1.11', 9], ['2.11', 4], ['3.11', 11], ['4.11', 8], ['5.11', 13], ['6.11', 9]];
+    const max = 13;
+    return {
+      kpis: [
+        { label: 'Прочитано сообщений', value: '18 432', hint: 'из 1 486 источников' },
+        { label: 'Прошло предфильтр', value: '642', hint: '3,5 % прочитанного' },
+        { label: 'Уникальных (без дублей)', value: '214', hint: '428 копий склеено' },
+        { label: 'Ушло в LLM', value: '211', hint: '38 пакетов' },
+        { label: 'Находок доставлено', value: '9', hint: 'ещё 1 ждёт отправки' },
+        { label: 'Стоимость LLM', value: '≈ $0,31', hint: '412 тыс. токенов' },
+      ],
+      funnel: [
+        { label: 'Прочитано', value: '18 432', pct: '100%' },
+        { label: 'Прошло предфильтр', value: '642', pct: '24%' },
+        { label: 'Уникальных', value: '214', pct: '12%' },
+        { label: 'Классифицировано', value: '211', pct: '11.8%' },
+        { label: 'Подошло', value: '10', pct: '3%' },
+        { label: 'Доставлено', value: '9', pct: '2.7%' },
+      ],
+      accounts: [
+        acc('+7 900 ••• 12 34', 'active', 'Читает', 212, '18 / 27', '×1,0 · норма', '403', 'вступил в @pyjobs_chat, 14:21'),
+        acc('+7 901 ••• 56 78', 'active', 'Читает', 143, '22 / 25', '×1,5 · FloodWait 3 ч назад', '396', 'FloodWait 340 с на вступлении, 11:05'),
+        acc('+7 902 ••• 90 12', 'flood', 'Пауза до 16:40', 97, '6 / 20', '×2,3 · торможение', '—', 'FloodWait 2 ч 10 мин на резолве, 14:30'),
+        acc('+7 903 ••• 34 56', 'banned', 'Забанен', 0, '—', '—', '—', 'UserDeactivatedBan, 3 ноя · группы переданы'),
+      ],
+      week: week.map(([day, n]) => ({ day, n, h: Math.round((n / max) * 120) + 'px' })),
+      recent: [
+        { kind: 'Проект', kindBg: '#FDF0E1', kindFg: '#8A4B08', time: '14:18', source: 'Фриланс IT', title: 'Telegram-бот записи в барбершоп с оплатой ЮKassa', meta: '40–60 тыс. ₽ · @sergey_barber' },
+        { kind: 'Вакансия', kindBg: '#EAF0FC', kindFg: '#16479E', time: '13:02', source: 'Python Jobs', title: 'Python-бэкенд (FastAPI) в маркетплейс, удалённо', meta: '250–300 тыс. ₽ · @hr_anna · ещё в 3 чатах' },
+        { kind: 'Вакансия', kindBg: '#EAF0FC', kindFg: '#16479E', time: '11:47', source: 'Vue.js Russia', title: 'Frontend Vue 3 / Nuxt, проектная занятость', meta: 'почасовая · t.me/dev_lead_ivan' },
+        { kind: 'Проект', kindBg: '#FDF0E1', kindFg: '#8A4B08', time: '09:30', source: 'Заказы на разработку', title: 'Парсер маркетплейсов + выгрузка в Google Sheets', meta: 'бюджет не указан · профиль автора' },
+      ],
+      sources: [
+        { label: 'Читаются', value: '1 486' },
+        { label: 'Ждут резолва', value: '386' },
+        { label: 'Ждут вступления', value: '58' },
+        { label: 'Мёртвые', value: '41' },
+        { label: 'Отсеяны', value: '117' },
+        { label: 'Найдено автопоиском', value: '+23 сегодня' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

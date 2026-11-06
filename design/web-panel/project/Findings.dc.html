@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Находки — tg-job-radar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Обзор</a>
+        <a href="Findings.dc.html" aria-current="page" style="padding: 8px 14px; border-radius: 8px; background: #EAF0FC; color: #16479E; font-weight: 600">Находки</a>
+        <a href="Sources.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Источники</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600; font-size: 13px">
+          <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#1E7A4F"></circle></svg>Доставка идёт
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Находки</h1>
+      <span style="color: #5B6370">всё, что прошло предфильтр, — с решением LLM</span>
+    </div>
+
+    <form role="search" aria-label="Фильтр находок" style="background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <label style="flex: 1 1 280px; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid #C9CED8; border-radius: 8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6370" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Поиск по тексту</span>
+        <input type="search" placeholder="Поиск: fastapi, бот, @контакт…" style="flex: 1; min-width: 0; border: 0; outline: none; font: inherit; background: transparent; color: #14171C">
+      </label>
+      <div role="group" aria-label="Решение" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; background: #EEF0F4; border-radius: 9px">
+        <sc-for list="{{statusTabs}}" as="t" hint-placeholder-count="5">
+          <button type="button" aria-pressed="{{t.pressed}}" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; background: {{t.bg}}; color: {{t.fg}}">{{t.label}} <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">{{t.count}}</span></button>
+        </sc-for>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Тип
+        <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C">
+          <option>Все</option><option>Вакансии</option><option>Проекты</option>
+        </select>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; color: #3D4552">Период
+        <select style="min-height: 40px; padding: 0 10px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit; background: #FFFFFF; color: #14171C">
+          <option>Сегодня</option><option selected>7 дней</option><option>30 дней</option>
+        </select>
+      </label>
+    </form>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+      <section aria-label="Список находок" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{items}}" as="f" hint-placeholder-count="6">
+          <article style="background: #FFFFFF; border: {{f.border}}; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+              <span style="padding: 2px 8px; border-radius: 999px; background: {{f.kindBg}}; color: {{f.kindFg}}; font-weight: 600">{{f.kind}}</span>
+              <span style="padding: 2px 8px; border-radius: 999px; background: {{f.stBg}}; color: {{f.stFg}}; font-weight: 600">{{f.status}}</span>
+              <span>{{f.when}} · {{f.source}}</span>
+              <span style="margin-left: auto">{{f.copies}}</span>
+            </div>
+            <h2 style="margin: 0; font-size: 15.5px; font-weight: 600">{{f.title}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; color: #3D4552; font-size: 13px">
+              <span>{{f.money}}</span><span>{{f.format}}</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace">{{f.contact}}</span>
+            </div>
+          </article>
+        </sc-for>
+        <div style="display: flex; justify-content: center; padding-top: 6px">
+          <button type="button" style="min-height: 40px; padding: 0 18px; border-radius: 8px; border: 1px solid #C9CED8; background: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer">Показать ещё</button>
+        </div>
+      </section>
+
+      <article aria-label="Выбранная находка" style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E1E4EA; border-radius: 12px; padding: 22px 24px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: #5B6370">
+            <span style="padding: 2px 8px; border-radius: 999px; background: #EAF0FC; color: #16479E; font-weight: 600">Вакансия</span>
+            <span style="padding: 2px 8px; border-radius: 999px; background: #E7F4EC; color: #17633F; font-weight: 600">Доставлена в бота 13:02</span>
+            <span>требования v3</span>
+          </div>
+          <h2 style="margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em">Python-бэкенд (FastAPI, PostgreSQL) в маркетплейс, удалённо</h2>
+        </div>
+
+        <dl style="margin: 0; display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px 16px">
+          <dt style="color: #5B6370">Деньги</dt><dd style="margin: 0">250–300 тыс. ₽</dd>
+          <dt style="color: #5B6370">Формат</dt><dd style="margin: 0">удалёнка, частичная занятость 20–30 ч/нед</dd>
+          <dt style="color: #5B6370">Контакт</dt><dd style="margin: 0"><a href="https://t.me/hr_anna">@hr_anna</a></dd>
+          <dt style="color: #5B6370">Почему подходит</dt><dd style="margin: 0">Python-бэкенд на FastAPI, удалёнка, middle+</dd>
+          <dt style="color: #5B6370">Оригинал</dt><dd style="margin: 0"><a href="https://t.me/ru_pythonjobs/8032">Python Jobs · сообщение 8032</a></dd>
+        </dl>
+
+        <section style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600">Текст сообщения</h3>
+          <div style="background: #F7F8FA; border: 1px solid #EEF0F4; border-radius: 10px; padding: 14px 16px; white-space: pre-line; color: #262B33">Ищем Python-разработчика (FastAPI, PostgreSQL, asyncio) в продуктовую команду маркетплейса.
+Полная удалёнка, можно частичную занятость 20–30 ч/нед. Middle+.
+Задачи: API каталога и заказов, интеграции с платёжными системами.
+Вилка 250–300 тыс. ₽. Писать @hr_anna</div>
+        </section>
+
+        <section style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600">Встречалось также в <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: #5B6370">3</span></h3>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px">
+            <sc-for list="{{copies}}" as="c" hint-placeholder-count="3">
+              <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid #EEF0F4; border-radius: 8px">
+                <a href="{{c.link}}">{{c.title}}</a><span style="color: #5B6370; font-size: 13px">{{c.when}}</span>
+              </li>
+            </sc-for>
+          </ul>
+        </section>
+      </article>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const kinds = { v: ['Вакансия', '#EAF0FC', '#16479E'], p: ['Проект', '#FDF0E1', '#8A4B08'] };
+    const sts = {
+      sent: ['Доставлена', '#E7F4EC', '#17633F'],
+      rej: ['Отклонена LLM', '#EEF0F4', '#3D4552'],
+      wait: ['Ждёт LLM', '#FDF0E1', '#8A4B08'],
+      queue: ['В очереди доставки', '#EAF0FC', '#16479E'],
+    };
+    const it = (k, s, when, source, title, money, format, contact, copies, selected) => ({
+      kind: kinds[k][0], kindBg: kinds[k][1], kindFg: kinds[k][2],
+      status: sts[s][0], stBg: sts[s][1], stFg: sts[s][2],
+      when, source, title, money, format, contact, copies,
+      border: selected ? '2px solid #1F5FD1' : '1px solid #E1E4EA',
+    });
+    const tab = (label, count, on) => ({ label, count, pressed: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#14171C' : '#3D4552' });
+    return {
+      statusTabs: [tab('Все', '214', false), tab('Доставлены', '61', true), tab('В очереди', '1', false), tab('Ждут LLM', '3', false), tab('Отклонены', '149', false)],
+      items: [
+        it('v', 'sent', 'сегодня 13:02', 'Python Jobs', 'Python-бэкенд (FastAPI, PostgreSQL) в маркетплейс, удалённо', '250–300 тыс. ₽', 'удалёнка', '@hr_anna', 'ещё в 3 чатах', true),
+        it('p', 'sent', 'сегодня 14:18', 'Фриланс IT', 'Telegram-бот записи в барбершоп с оплатой ЮKassa', '40–60 тыс. ₽', 'разовый проект', '@sergey_barber', '', false),
+        it('v', 'sent', 'сегодня 11:47', 'Vue.js Russia', 'Frontend Vue 3 / Nuxt для личного кабинета', 'почасовая', 'проект, удалённо', 't.me/dev_lead_ivan', 'ещё в 1 чате', false),
+        it('p', 'sent', 'сегодня 09:30', 'Заказы на разработку', 'Парсер маркетплейсов с выгрузкой в Google Sheets', 'бюджет не указан', '—', 'профиль автора', '', false),
+        it('v', 'sent', 'вчера 19:55', 'Удалёнка IT', 'Fullstack Django + React в EdTech, part-time', '180–220 тыс. ₽', 'удалёнка, 25 ч/нед', '@cto_marina', 'ещё в 5 чатах', false),
+        it('p', 'sent', 'вчера 16:12', 'Боты на заказ', 'RAG-ассистент по базе знаний для отдела продаж', '120 тыс. ₽', 'проект, 1 месяц', '@pm_oleg', '', false),
+      ],
+      copies: [
+        { title: 'Удалёнка IT', link: 'https://t.me/remote_it', when: 'сегодня 13:20' },
+        { title: 'Вакансии backend', link: 'https://t.me/backend_jobs', when: 'сегодня 13:41' },
+        { title: 'Python Russia (чат)', link: 'https://t.me/ru_python', when: 'сегодня 14:05' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
