@@ -186,6 +186,21 @@ class SqlAlchemySourceRepository:
         async with self._sf() as s:
             return {a: n for a, n in (await s.execute(q)).all()}
 
+    async def add_found(self, source_id: int, n: int = 1) -> None:
+        async with transaction(self._sf) as s:
+            await s.execute(t.update().where(t.c.id == source_id).values(found_count=t.c.found_count + n))
+
+    async def count_by_status(self) -> dict[SourceStatus, int]:
+        async with self._sf() as s:
+            rows = (await s.execute(sa.select(t.c.status, sa.func.count()).group_by(t.c.status))).all()
+        return {SourceStatus(st): n for st, n in rows}
+
+    async def top(self, limit: int, offset: int) -> list[Source]:
+        q = (sa.select(t).where(t.c.status == SourceStatus.active.value)
+             .order_by(t.c.found_count.desc(), t.c.id).limit(limit).offset(offset))
+        async with self._sf() as s:
+            return [_row(r) for r in (await s.execute(q)).all()]
+
     async def set_cursor(self, source_id: int, last_message_id: int) -> None:
         async with transaction(self._sf) as s:
             await s.execute(t.update().where(t.c.id == source_id, t.c.last_message_id < last_message_id)

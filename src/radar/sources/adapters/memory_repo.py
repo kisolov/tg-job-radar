@@ -158,6 +158,18 @@ class InMemorySourceRepository:
         return dict(Counter(s.assigned_account_id for s in self.rows.values()
                             if s.kind is kind and s.assigned_account_id is not None))
 
+    async def add_found(self, source_id: int, n: int = 1) -> None:
+        if s := self.rows.get(source_id):
+            s.found_count += n
+
+    async def count_by_status(self) -> dict[SourceStatus, int]:
+        return dict(Counter(s.status for s in self.rows.values()))
+
+    async def top(self, limit: int, offset: int) -> list[Source]:
+        rows = sorted((s for s in self.rows.values() if s.status is SourceStatus.active),
+                      key=lambda s: (-s.found_count, s.id))
+        return deepcopy(rows[offset:offset + limit])
+
     async def set_cursor(self, source_id: int, last_message_id: int) -> None:
         if s := self.rows.get(source_id):  # как UPDATE в SQL: нет строки — нет изменений
             s.last_message_id = max(s.last_message_id, last_message_id)

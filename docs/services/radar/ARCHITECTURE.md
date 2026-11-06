@@ -10,6 +10,7 @@
 | `shared` | настройки, БД, часы | — |
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
 | `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
+| `delivery` | как находка и управление выглядят в боте | `bot.py` (aiogram Router, фильтр владельца) → usecases (`StatusReport`, `ListSources`, `ShowRequirements`, `SetRequirements`, `SetPaused`, `SetOverride`, `AttachCopyEdit`) → порт `Notifier` (`AiogramNotifier` / фейк; он же `AlertSink`); `card.py` |
 | `findings` | что считать одной находкой | usecases (`ClusterMessage` — `MessageSink` конвейера, `DeliverAccepted`, `RedeliverStale`) → `FindingService` → `FindingRepository`; `similarity.py`, `events.py` (`CopyAttached`, `InProcessEventBus`) |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
 | `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции); usecases (`ProbeModel`, `ClassifyPending`) → `ScreeningService` (оценка пакета, бюджет) → порты `LlmClassifier` (NeuroAPI / фейк), `UsageRepository`, `RequirementsRepository` |
@@ -34,6 +35,31 @@
 < 200 символов **или** нет контакта `@username`/t.me) → `short` (< `PREFILTER_MIN_LEN`) → `not_russian` (кириллица < 50 %
 букв, ссылки и упоминания не считаются) → `stopword` → `no_marker` → `pass`. Слова сравниваются с начала слова,
 короткие (≤ 3 символа: «тз», «зп») — целиком; «ё» = «е».
+
+### delivery
+
+Карточка (HTML, ≤ 4096; при переполнении обрезается суть, ссылка и контакт остаются):
+
+```
+💼 Вакансия | 🛠 Проект
+<суть>
+💰 <деньги>          — если есть
+📍 <формат>          — если есть
+👤 <контакт>
+🔗 <ссылка на первую копию: название чата>
+✅ <почему подходит>
+Также в: <чат>, …, и ещё N   — если копий из других чатов > 0 (до 10 названий)
+```
+
+Контакт: `contact` из ответа LLM, только если этот @username / t.me-ссылка есть в тексте → `@отправитель`, если это
+человек → `tg://user?id=` → «контакта нет» (пост канала, анонимный админ).
+
+Команды (только `OWNER_TELEGRAM_ID`, остальным — тишина): `/status`, `/add`, `/remove`, `/sources [стр]`, `/req`,
+`/setreq` (следующее сообщение — новый текст, `/cancel`), `/pause`, `/resume`, `/set KEY VALUE` для
+`LLM_BATCH_SIZE, LLM_BATCH_WAIT_S, LLM_MAX_CHARS, LLM_DAILY_TOKEN_LIMIT, NEUROAPI_MODEL, PREFILTER_MIN_LEN`.
+
+`shared/runtime.py` — `RuntimeConfig`: env + `settings_overrides`; снимок в памяти процесса, обновляется при `/set`
+(допущение одной реплики). Флаг паузы — ключ `DELIVERY_PAUSED`.
 
 ### findings
 

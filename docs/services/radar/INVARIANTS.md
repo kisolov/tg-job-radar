@@ -14,4 +14,5 @@
 | R8 (eventual) | Расход LLM за сутки ≤ `LLM_DAILY_TOKEN_LIMIT`, перелёт ≤ ошибки оценки одного пакета | `UsageRepository.reserve`: conditional `UPDATE daily_stats … WHERE факт+резерв+оценка ≤ limit` до вызова LLM |
 | R9 (eventual) | «Также в» у отправленной находки отражает все её копии | событие `CopyAttached` → редактирование карточки; копии, пришедшие во время отправки, догоняются правкой сразу после `mark_delivered` |
 | R10 (eventual) | Отбор использует текущую версию требований | находка хранит `requirements_version`, с которой классифицирована |
+| R11 | Командовать ботом может только владелец; бот пишет только владельцу | `router.message.filter(F.from_user.id == OWNER_TELEGRAM_ID)` (без ответа остальным); `AiogramNotifier` шлёт только в `OWNER_TELEGRAM_ID` |
 | — | Секреты аккаунта (`session`, `api_hash`) в БД только Fernet-шифрованные (`USERBOT_STORE_KEY`); 2FA-пароль и device-секреты не читаются из файла импорта, не хранятся и не логируются | `ImportAccount` (берёт только `phone`, `session_str|session`, `app_id`, `app_hash`), `FernetSecretBox` |

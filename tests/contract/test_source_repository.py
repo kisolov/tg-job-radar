@@ -171,6 +171,19 @@ async def test_due_for_poll(source_repo, account_repo_shared):
     assert [s.id for s in due] == [ch.id, old.id]  # никогда не опрошенные — первыми; невступившие — нет
 
 
+async def test_counts_and_top(source_repo):
+    a = await _group(source_repo, "grp_one", 1)
+    b = await _group(source_repo, "grp_two", 2)
+    await source_repo.add_candidate("cand_one", "seed", 5)
+    await source_repo.add_found(b.id, 3)
+    await source_repo.add_found(a.id, 1)
+    counts = await source_repo.count_by_status()
+    assert counts == {SourceStatus.active: 2, SourceStatus.candidate: 1}
+    top = await source_repo.top(limit=1, offset=0)
+    assert [s.id for s in top] == [b.id] and top[0].found_count == 3
+    assert [s.id for s in await source_repo.top(limit=5, offset=1)] == [a.id]
+
+
 async def test_find_by_ref(source_repo):
     s = await source_repo.add_candidate("chan_x", "seed", 5)
     assert (await source_repo.find("chan_x")).id == s.id
