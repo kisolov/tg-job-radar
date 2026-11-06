@@ -6,7 +6,8 @@ _TG_LINK = re.compile(
     r"(?:https?://)?(?:www\.)?(?:t|telegram)\.me/(?:s/)?(\+[\w-]+|joinchat/[\w-]+|[a-zA-Z][\w]{3,31})",
     re.IGNORECASE,
 )
-_RESERVED = {"addstickers", "share", "proxy", "socks", "joinchat", "iv", "login", "setlanguage", "addtheme"}
+_RESERVED = {"addstickers", "share", "proxy", "socks", "joinchat", "iv", "login", "setlanguage", "addtheme",
+             "addlist", "boost", "addemoji", "contact", "invoice", "giftcode", "confirmphone"}
 
 
 def _username(name: str) -> str | None:

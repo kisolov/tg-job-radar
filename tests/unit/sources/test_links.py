@@ -14,6 +14,8 @@ from radar.sources.links import extract_chat_links, normalize_username
     ("@some_helper_bot", None),
     ("@ab", None),
     ("t.me/addstickers/foo", None),
+    ("https://t.me/addlist/AbCdEf123", None),  # папка чатов, а не чат
+    ("t.me/boost/somechan", None),
 ])
 def test_normalize_username(raw, exp):
     assert normalize_username(raw) == exp
