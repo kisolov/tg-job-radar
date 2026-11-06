@@ -8,10 +8,18 @@ from uuid import UUID
 from radar.accounts.entities import Account, AccountStatus
 from radar.accounts.ports import AccountRepository
 from radar.accounts.service import LONG_FLOOD_S, AccountService
-from radar.ingest.ports import IncomingMessage, TelegramGateway, TgBanned, TgFlood, TgUnauthorized
+from radar.ingest.ports import (
+    GatewayFactory,
+    IncomingMessage,
+    TelegramGateway,
+    TgBanned,
+    TgFlood,
+    TgSourceGone,
+    TgUnauthorized,
+)
 from radar.ingest.usecases import PollChannels, ReceiveMessage, RunJoinQueue, RunResolveQueue
 from radar.shared.clock import Clock
-from radar.sources.entities import SourceKind
+from radar.sources.entities import SourceKind, SourceStatus
 from radar.sources.ports import SourceRepository
 from radar.sources.usecases import AssignWork, ReleaseAccountSources
 
@@ -77,7 +85,14 @@ class AccountWorker:
     async def _housekeeping(self, account: Account) -> None:
         if account.join.day != self._now().date():
             await self._svc.roll_day(self.account_id)
-        joined = [s for s in await self._sources.list_assigned(self.account_id, SourceKind.group) if s.joined]
+        for s in await self._sources.list_to_leave(self.account_id):
+            try:
+                await self.gateway.leave(s)
+            except TgSourceGone:
+                pass  # нас уже нет в чате
+            await self._sources.release(s.id)
+        joined = [s for s in await self._sources.list_assigned(self.account_id, SourceKind.group)
+                  if s.joined and s.status is SourceStatus.active]
         self.gateway.watch(joined)
 
     async def _maybe_poll(self, account: Account) -> None:
@@ -98,6 +113,22 @@ class AccountWorker:
         await self._svc.mark_failed(self.account_id, status, error)
         await self._release.execute(self.account_id)
         await self.gateway.stop()
+
+
+class WorkerFactory:
+    """Собирает AccountWorker на аккаунт: свой шлюз, общие usecases."""
+
+    def __init__(self, gateway_factory: GatewayFactory, accounts: AccountRepository, account_service: AccountService,
+                 join_queue: RunJoinQueue, resolve_queue: RunResolveQueue, poll: PollChannels,
+                 receive: ReceiveMessage, release_sources: ReleaseAccountSources, sources: SourceRepository,
+                 clock: Clock) -> None:
+        self._gateways = gateway_factory
+        self._deps = dict(accounts=accounts, account_service=account_service, join_queue=join_queue,
+                          resolve_queue=resolve_queue, poll=poll, receive=receive, release_sources=release_sources,
+                          sources=sources, clock=clock)
+
+    def __call__(self, account: Account) -> AccountWorker:
+        return AccountWorker(account_id=account.id, gateway=self._gateways(account), **self._deps)
 
 
 class PoolRunner:

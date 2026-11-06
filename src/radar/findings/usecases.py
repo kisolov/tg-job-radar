@@ -12,6 +12,7 @@ from radar.ingest.ports import IncomingMessage
 from radar.screening.ports import UsageRepository
 from radar.screening.prefilter import PrefilterConfig, prefilter
 from radar.shared.clock import Clock
+from radar.sources.ports import SourceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,22 @@ class ClusterMessage:
     """MessageSink конвейера: предфильтр → кластер дублей (до LLM: не платить за копии)."""
 
     def __init__(self, service: FindingService, prefilter_config: Callable[[], PrefilterConfig], bus: EventBus,
-                 stats: UsageRepository, clock: Clock) -> None:
+                 stats: UsageRepository, clock: Clock, discover=None, sources: SourceRepository | None = None) -> None:
         self._service, self._cfg, self._bus, self._stats, self._clock = service, prefilter_config, bus, stats, clock
+        self._discover, self._sources = discover, sources
 
     async def submit(self, msg: IncomingMessage) -> None:
         day = self._clock.now().date()
+        if self._discover is not None:
+            try:
+                await self._discover.execute(msg)  # до предфильтра: ссылки есть и в мусоре
+            except Exception:
+                logger.exception("Автопополнение по сообщению %s/%s не удалось", msg.source_id, msg.message_id)
         verdict = prefilter(msg.text, self._cfg())
-        if verdict != "pass":
+        passed = verdict == "pass"
+        if self._sources is not None:
+            await self._sources.bump_counts(msg.source_id, read=1, passed=int(passed))
+        if not passed:
             await self._stats.bump(day, read=1)
             return
         await self._stats.bump(day, read=1, passed_prefilter=1)

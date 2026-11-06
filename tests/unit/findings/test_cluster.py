@@ -135,6 +135,24 @@ async def test_late_copy_during_delivery_edits_card(clock):
     assert env.notifier.edits == [(1, "Python, FastAPI | 2")]
 
 
+async def test_discovery_and_source_counters(clock):
+    from radar.accounts.adapters.memory_repo import InMemoryAccountRepository
+    from radar.sources.adapters.memory_repo import InMemorySourceRepository
+    from radar.sources.service import SourceService
+    from radar.sources.usecases import DiscoverFromMessage
+
+    env = Env(clock)
+    sources = InMemorySourceRepository(InMemoryAccountRepository(), membership_cap=500)
+    src = await sources.add_candidate("home_chat", "seed", 5)
+    cluster = ClusterMessage(env.service, lambda: PCFG, env.bus, env.stats, clock,
+                             discover=DiscoverFromMessage(SourceService(sources, None)), sources=sources)
+    await cluster.submit(env.msg(src.id, text="Флудим тут, заходите в t.me/other_chat_ru"))  # мусор, но ссылка
+    await cluster.submit(env.msg(src.id, 2))
+    assert (await sources.find("other_chat_ru")).added_by == "discovery"
+    got = await sources.get(src.id)
+    assert (got.read_count, got.passed_count) == (2, 1)
+
+
 async def test_window_new_cluster_after_8_days(clock):
     env = Env(clock)
     await env.cluster.submit(env.msg(1))

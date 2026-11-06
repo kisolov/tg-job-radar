@@ -68,13 +68,14 @@ class InMemorySourceRepository:
         s.status = SourceStatus.rejected
         s.version += 1
 
-    async def set_resolved(self, source_id, peer_id, access_hash, kind, title) -> bool:
+    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None) -> bool:
         s = self.rows[source_id]
         if self._peer_taken(source_id, peer_id):
             self._reject(s)
             return False
         s.peer_id, s.access_hash, s.kind, s.title = peer_id, access_hash, kind, title
         s.status = SourceStatus.active
+        s.activated_at = at
         s.version += 1
         return True
 
@@ -157,6 +158,30 @@ class InMemorySourceRepository:
     async def assigned_counts(self, kind: SourceKind) -> dict[UUID, int]:
         return dict(Counter(s.assigned_account_id for s in self.rows.values()
                             if s.kind is kind and s.assigned_account_id is not None))
+
+    async def bump_counts(self, source_id: int, read: int, passed: int) -> None:
+        if s := self.rows.get(source_id):
+            s.read_count += read
+            s.passed_count += passed
+
+    def _joined_active_groups(self, activated_before):
+        return [s for s in self.rows.values()
+                if s.status is SourceStatus.active and s.kind is SourceKind.group and s.joined
+                and s.assigned_account_id is not None and s.activated_at is not None
+                and s.activated_at < activated_before]
+
+    async def useless(self, activated_before, min_read: int) -> list[Source]:
+        return deepcopy([s for s in self._joined_active_groups(activated_before)
+                         if s.found_count == 0 and s.passed_count == 0 and s.read_count >= min_read])
+
+    async def eviction_candidate(self, activated_before) -> Source | None:
+        c = [s for s in self._joined_active_groups(activated_before) if s.found_count == 0]
+        c.sort(key=lambda s: (s.passed_count, -s.read_count, s.id))
+        return deepcopy(c[0]) if c else None
+
+    async def list_to_leave(self, account_id: UUID) -> list[Source]:
+        return deepcopy([s for s in self.rows.values() if s.assigned_account_id == account_id and s.joined
+                         and s.status in (SourceStatus.rejected, SourceStatus.dead)])
 
     async def add_found(self, source_id: int, n: int = 1) -> None:
         if s := self.rows.get(source_id):

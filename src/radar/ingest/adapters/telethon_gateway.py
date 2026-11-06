@@ -156,6 +156,14 @@ class TelethonGateway:
         return out
 
     @_mapped
+    async def recent(self, source: Source, limit: int = 30) -> list[IncomingMessage]:
+        out = []
+        async for m in self._client.iter_messages(_input_peer(source), limit=limit):
+            if isinstance(m, types.Message):
+                out.append(to_incoming(source, m))
+        return out[::-1]
+
+    @_mapped
     async def resolve(self, ref: str) -> Resolved:
         if ref.startswith("+"):
             invite = await self._client(CheckChatInviteRequest(ref[1:]))

@@ -39,6 +39,9 @@ class Source:
     priority: int
     version: int = 0
     last_polled_at: datetime | None = None
+    read_count: int = 0
+    passed_count: int = 0
+    activated_at: datetime | None = None
 
     @property
     def ref(self) -> str:

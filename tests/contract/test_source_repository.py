@@ -184,6 +184,32 @@ async def test_counts_and_top(source_repo):
     assert [s.id for s in await source_repo.top(limit=5, offset=1)] == [a.id]
 
 
+async def test_usefulness_queries(source_repo, account_repo_shared):
+    from datetime import UTC, datetime, timedelta
+
+    t0 = datetime(2026, 11, 1, tzinfo=UTC)
+    acc = make_account()
+    await account_repo_shared.add(acc)
+    made = []
+    for i, (reads, passed, found) in enumerate([(150, 0, 0), (150, 3, 0), (50, 0, 0), (150, 0, 2)]):
+        s = await source_repo.add_candidate(f"grp_{i}_x", "seed", 5)
+        await source_repo.set_resolved(s.id, i + 1, 1, SourceKind.group, "g", at=t0)
+        await source_repo.assign(s.id, acc.id)
+        await source_repo.set_joined(s.id)
+        await source_repo.bump_counts(s.id, read=reads, passed=passed)
+        await source_repo.add_found(s.id, found)
+        made.append(s)
+    got = await source_repo.get(made[0].id)
+    assert (got.read_count, got.passed_count, got.activated_at) == (150, 0, t0)
+    useless = await source_repo.useless(activated_before=t0 + timedelta(days=1), min_read=100)
+    assert [s.id for s in useless] == [made[0].id]
+    assert await source_repo.useless(activated_before=t0, min_read=100) == []  # ещё не прошло окно
+    cand = await source_repo.eviction_candidate(activated_before=t0 + timedelta(days=1))
+    assert cand.id in {made[0].id, made[1].id, made[2].id}  # только с found_count == 0
+    await source_repo.mark(made[0].id, SourceStatus.rejected)
+    assert [s.id for s in await source_repo.list_to_leave(acc.id)] == [made[0].id]
+
+
 async def test_find_by_ref(source_repo):
     s = await source_repo.add_candidate("chan_x", "seed", 5)
     assert (await source_repo.find("chan_x")).id == s.id

@@ -21,6 +21,7 @@ def _row(r) -> Source:
         status=SourceStatus(r.status), assigned_account_id=r.assigned_account_id, joined=r.joined,
         last_message_id=r.last_message_id, found_count=r.found_count, relay_score=r.relay_score,
         added_by=r.added_by, priority=r.priority, version=r.version, last_polled_at=r.last_polled_at,
+        read_count=r.read_count, passed_count=r.passed_count, activated_at=r.activated_at,
     )
 
 
@@ -100,11 +101,11 @@ class SqlAlchemySourceRepository:
             order=(t.c.last_polled_at.asc().nulls_first(), t.c.id), limit=limit,
         )
 
-    async def set_resolved(self, source_id, peer_id, access_hash, kind, title) -> bool:
+    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None) -> bool:
         try:
             async with transaction(self._sf) as s:
                 await s.execute(t.update().where(t.c.id == source_id).values(
-                    peer_id=peer_id, access_hash=access_hash, kind=kind.value, title=title,
+                    peer_id=peer_id, access_hash=access_hash, kind=kind.value, title=title, activated_at=at,
                     status=SourceStatus.active.value, version=t.c.version + 1, updated_at=sa.func.now(),
                 ))
             return True
@@ -185,6 +186,29 @@ class SqlAlchemySourceRepository:
              .group_by(t.c.assigned_account_id))
         async with self._sf() as s:
             return {a: n for a, n in (await s.execute(q)).all()}
+
+    async def bump_counts(self, source_id: int, read: int, passed: int) -> None:
+        async with transaction(self._sf) as s:
+            await s.execute(t.update().where(t.c.id == source_id).values(
+                read_count=t.c.read_count + read, passed_count=t.c.passed_count + passed))
+
+    def _joined_active_groups(self, activated_before):
+        return (t.c.status == SourceStatus.active.value, t.c.kind == SourceKind.group.value, t.c.joined.is_(True),
+                t.c.assigned_account_id.is_not(None), t.c.activated_at < activated_before)
+
+    async def useless(self, activated_before, min_read: int) -> list[Source]:
+        return await self._select(*self._joined_active_groups(activated_before), t.c.found_count == 0,
+                                  t.c.passed_count == 0, t.c.read_count >= min_read, order=(t.c.id,))
+
+    async def eviction_candidate(self, activated_before) -> Source | None:
+        rows = await self._select(*self._joined_active_groups(activated_before), t.c.found_count == 0,
+                                  order=(t.c.passed_count, t.c.read_count.desc(), t.c.id), limit=1)
+        return rows[0] if rows else None
+
+    async def list_to_leave(self, account_id: UUID) -> list[Source]:
+        return await self._select(
+            t.c.assigned_account_id == account_id, t.c.joined.is_(True),
+            t.c.status.in_([SourceStatus.rejected.value, SourceStatus.dead.value]), order=(t.c.id,))
 
     async def add_found(self, source_id: int, n: int = 1) -> None:
         async with transaction(self._sf) as s:

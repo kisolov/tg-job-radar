@@ -46,7 +46,8 @@ class World:
         self.receive = ReceiveMessage(self.log, self.sink, self.sources, self.clock)
         self.poll = PollChannels(self.sources, self.receive, self.clock, interval_s=300)
         self.join_queue = RunJoinQueue(self.accounts, self.account_service, self.sources, self.clock, CAP)
-        self.resolve_queue = RunResolveQueue(self.accounts, self.account_service, self.sources, self.clock)
+        self.resolve_queue = RunResolveQueue(self.accounts, self.account_service, self.sources, self.clock,
+                                             self.source_service)
         self.release = ReleaseAccountSources(self.source_service)
         self.assign = AssignWork(self.source_service)
 

@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
-from radar.sources.links import normalize_username
+from radar.shared.clock import Clock
+from radar.sources.links import extract_chat_links, normalize_username
 from radar.sources.service import AddResult, SourceService
 
 OWNER_PRIORITY = 10
@@ -71,11 +72,43 @@ class ImportSeeds:
 
 
 class AssignWork:
+    def __init__(self, service: SourceService, clock: Clock | None = None) -> None:
+        self._service, self._clock = service, clock
+
+    async def execute(self) -> int:
+        return await self._service.assign_work(self._clock.now() if self._clock else None)
+
+
+DISCOVERY_PRIORITY = 1
+DISCOVERY_MAX_PER_MESSAGE = 5
+
+
+class DiscoverFromMessage:
+    """Автопополнение: t.me-ссылки и источник репоста из любого прочитанного сообщения → кандидаты."""
+
     def __init__(self, service: SourceService) -> None:
         self._service = service
 
+    async def execute(self, msg) -> int:
+        refs = extract_chat_links(msg.text or "")
+        if msg.fwd_from_username:
+            fwd = normalize_username(msg.fwd_from_username)
+            if fwd and fwd not in refs:
+                refs.append(fwd)
+        if not refs:
+            return 0
+        res = await self._service.add_refs(refs[:DISCOVERY_MAX_PER_MESSAGE], "discovery", DISCOVERY_PRIORITY)
+        return len(res.added)
+
+
+class RetireUseless:
+    """Раз в сутки: вступленные группы без пользы за 14 суток снимаются (слот освобождает воркер после выхода)."""
+
+    def __init__(self, service: SourceService, clock: Clock) -> None:
+        self._service, self._clock = service, clock
+
     async def execute(self) -> int:
-        return await self._service.assign_work()
+        return await self._service.retire_useless(self._clock.now())
 
 
 class ReleaseAccountSources:

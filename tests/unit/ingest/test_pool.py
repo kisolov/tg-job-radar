@@ -24,6 +24,23 @@ async def test_ban_stops_only_that_account(world):
     assert not w1.gateway.started
 
 
+async def test_worker_leaves_retired_groups(world):
+    from radar.sources.entities import SourceStatus
+
+    a = await world.add_account()
+    g = await world.add_source("grp_one", SourceKind.group, 1, account=a)
+    await world.sources.set_joined(g.id)
+    await world.source_service.retire(g.id)
+    assert (await world.accounts.get(a.id)).membership_count == 1  # слот занят, пока не вышли
+    w = world.worker(a)
+    await w.start()
+    assert await w.step()
+    assert w.gateway.left == ["grp_one"]
+    got = await world.sources.get(g.id)
+    assert got.status is SourceStatus.rejected and got.assigned_account_id is None and not got.joined
+    assert (await world.accounts.get(a.id)).membership_count == 0
+
+
 async def test_unauthorized_on_start(world):
     a = await world.add_account()
     world.tg.errors[("start", None)] = TgUnauthorized()

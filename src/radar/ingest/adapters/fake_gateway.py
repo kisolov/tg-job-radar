@@ -53,6 +53,7 @@ class FakeGateway:
         self.started = False
         self.callback: MessageCallback | None = None
         self.watched: set[int] = set()
+        self.left: list[str] = []
 
     def _check(self, op: str, key: object) -> None:
         if exc := self.world.account_errors.get(self.account.phone):
@@ -95,6 +96,11 @@ class FakeGateway:
 
     async def leave(self, source: Source) -> None:
         self._check("leave", source.ref)
+        self.left.append(source.ref)
+
+    async def recent(self, source: Source, limit: int = 30) -> list[IncomingMessage]:
+        self._check("recent", source.id)
+        return sorted(self.world.history.get(source.id, []), key=lambda m: m.message_id)[-limit:]
 
     async def search(self, query: str) -> list[tuple[str, str, SourceKind]]:
         self._check("search", query)

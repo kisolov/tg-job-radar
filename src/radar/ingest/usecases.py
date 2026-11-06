@@ -20,7 +20,7 @@ from radar.ingest.ports import (
 from radar.shared.clock import Clock
 from radar.sources.entities import SourceKind, SourceStatus
 from radar.sources.ports import SourceRepository
-from radar.sources.service import AddResult
+from radar.sources.service import AddResult, SourceService
 
 logger = logging.getLogger(__name__)
 
@@ -163,8 +163,9 @@ class RunResolveQueue:
     """Один резолв аккаунта за тик: кандидат с наибольшим priority → peer id + access_hash в каталог."""
 
     def __init__(self, accounts: AccountRepository, account_service: AccountService, sources: SourceRepository,
-                 clock: Clock) -> None:
+                 clock: Clock, source_service: SourceService | None = None) -> None:
         self._accounts, self._svc, self._sources, self._clock = accounts, account_service, sources, clock
+        self._source_service = source_service
 
     async def tick(self, account_id: UUID, gateway: TelegramGateway) -> bool:
         account = await self._accounts.get(account_id)
@@ -189,7 +190,23 @@ class RunResolveQueue:
         await self._svc.record_action(account_id, "resolve")
         if resolved.kind is None:
             await self._sources.mark(source.id, SourceStatus.rejected)  # человек или бот, не чат
-        else:
-            await self._sources.set_resolved(source.id, resolved.peer_id, resolved.access_hash,
-                                             resolved.kind, resolved.title)
+            return True
+        if not await self._sources.set_resolved(source.id, resolved.peer_id, resolved.access_hash,
+                                                resolved.kind, resolved.title, at=self._clock.now()):
+            return True  # дубль уже известного чата (R7)
+        if source.added_by == "discovery" and self._source_service is not None:
+            await self._vet(source.id, resolved, gateway)
         return True
+
+    async def _vet(self, source_id: int, resolved, gateway: TelegramGateway) -> None:
+        """Кандидат из автопополнения: по теме, по-русски, не ретранслятор агрегатора — иначе rejected."""
+        sample: list[str] = []
+        current = await self._sources.get(source_id)
+        if current is not None and current.peer_id is not None:
+            try:
+                sample = [m.text for m in await gateway.recent(current, 30)]
+            except (TgSourceGone, TgFlood):
+                sample = []
+        verdict = self._source_service.vet(resolved.title, resolved.about, sample)
+        if verdict is SourceStatus.rejected:
+            await self._sources.mark(source_id, SourceStatus.rejected)

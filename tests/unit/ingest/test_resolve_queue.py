@@ -33,6 +33,28 @@ async def test_resolve_gone_and_user(world):
     assert (await world.sources.get(user.id)).status is SourceStatus.rejected
 
 
+async def test_discovered_relay_rejected_after_resolve(world):
+    a = await world.add_account()
+    s = await world.sources.add_candidate("hh_relay", "discovery", 1)
+    world.tg.chats["hh_relay"] = Resolved(5, 1, SourceKind.channel, "Вакансии IT")
+    for i in range(25):
+        world.tg.post(s.id, i + 1, f"Python dev https://hh.ru/vacancy/{i} #вакансия")
+    await world.resolve_queue.tick(a.id, world.tg.factory(a))
+    got = await world.sources.get(s.id)
+    assert got.status is SourceStatus.rejected and got.peer_id == 5
+
+
+async def test_seed_not_vetted(world):
+    a = await world.add_account()
+    s = await world.sources.add_candidate("hh_relay", "seed", 5)
+    world.tg.chats["hh_relay"] = Resolved(5, 1, SourceKind.channel, "Вакансии IT")
+    for i in range(25):
+        world.tg.post(s.id, i + 1, f"Python dev https://hh.ru/vacancy/{i} #вакансия")
+    await world.resolve_queue.tick(a.id, world.tg.factory(a))
+    got = await world.sources.get(s.id)
+    assert got.status is SourceStatus.active and got.activated_at == world.clock.now()
+
+
 async def test_search_adds_candidates(world):
     from radar.ingest.usecases import SearchSources
 

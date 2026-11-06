@@ -82,6 +82,9 @@ class TelegramGateway(Protocol):
     async def fetch_new(self, source: Source, min_id: int, limit: int = 100) -> list[IncomingMessage]:
         """Сообщения с id > min_id, по возрастанию id."""
 
+    async def recent(self, source: Source, limit: int = 30) -> list[IncomingMessage]:
+        """Последние сообщения публичного чата (без вступления) — выборка для проверки кандидата."""
+
     async def resolve(self, ref: str) -> Resolved: ...
     async def join(self, source: Source) -> Peer: ...
     async def leave(self, source: Source) -> None: ...

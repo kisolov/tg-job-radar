@@ -16,7 +16,8 @@ class SourceRepository(Protocol):
         """Взять кандидата с наибольшим priority и перевести в `resolving` (SKIP LOCKED: не двоим)."""
 
     async def set_resolved(
-        self, source_id: int, peer_id: int | None, access_hash: int | None, kind: SourceKind, title: str
+        self, source_id: int, peer_id: int | None, access_hash: int | None, kind: SourceKind, title: str,
+        at=None,
     ) -> bool:
         """→ active. peer_id None — инвайт, id узнаем при вступлении.
         Если peer_id уже есть у другого источника — этот → rejected, False (R7)."""
@@ -44,6 +45,18 @@ class SourceRepository(Protocol):
     async def list_assigned(self, account_id: UUID, kind: SourceKind) -> list[Source]: ...
     async def list_unassigned(self, kind: SourceKind, limit: int) -> list[Source]: ...
     async def assigned_counts(self, kind: SourceKind) -> dict[UUID, int]: ...
+    async def bump_counts(self, source_id: int, read: int, passed: int) -> None:
+        """Счётчики прочитанных и прошедших предфильтр сообщений источника."""
+
+    async def useless(self, activated_before, min_read: int) -> list[Source]:
+        """Вступленные active-группы старше окна: ни одной находки, ни одного прошедшего предфильтр, прочитано ≥ min_read."""
+
+    async def eviction_candidate(self, activated_before) -> Source | None:
+        """Вступленная active-группа старше окна без находок (наименее полезная) — кандидат на вытеснение."""
+
+    async def list_to_leave(self, account_id: UUID) -> list[Source]:
+        """Вступленные группы аккаунта, которые сняты с чтения (rejected/dead): воркер выходит и освобождает слот."""
+
     async def add_found(self, source_id: int, n: int = 1) -> None:
         """+n к числу находок источника (статистика /sources, отсев бесполезных)."""
 

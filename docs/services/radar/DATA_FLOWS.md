@@ -25,3 +25,33 @@ live-апдейт группы ─┐
 - Инвайт-ссылка резолвится без id (`CheckChatInvite`); id и access_hash приходят при вступлении (`set_peer`).
 - `radar sources search "запрос" …` — глобальный поиск с первого active-аккаунта, пауза resolve-Pacer между
   запросами, находки → кандидаты `seed`.
+
+## Отбор и доставка
+
+```
+MessageSink = ClusterMessage.submit(msg)
+  ├─ prefilter(text) ≠ pass → daily_stats.read+1, конец
+  ├─ daily_stats.read+1, passed_prefilter+1
+  ├─ FindingService.cluster → FindingRepository.cluster (advisory lock): новый pending-кластер или копия
+  └─ копия уже доставленной находки → CopyAttached → AttachCopyEdit правит карточку (R9)
+
+ClassifyPending.run_forever
+  ├─ ждёт LLM_BATCH_SIZE pending или старейший старше LLM_BATCH_WAIT_S
+  ├─ ScreeningService.reserve (R8) — нет бюджета → пауза до конца суток, алерт
+  ├─ LlmClassifier.classify(пакет, текущие требования, модель из runtime)
+  │     LlmUnavailable → резерв снят, кластеры pending, пауза 60 с
+  ├─ commit_usage, llm_items+N; set_classification (только из pending, с версией требований — R10)
+  └─ принятые: sources.found_count+1 по копиям; будит DeliverAccepted
+
+DeliverAccepted (по будильнику и раз в 30 с; на /pause — ничего)
+  claim (accepted→delivering, R1) → render_card → Notifier.send → mark_delivered → findings+1
+  → сверка копий: пришедшие во время отправки дописываются правкой
+RedeliverStale (раз в минуту): delivering старше CLAIM_STALE_S → accepted
+Чистка messages старше MESSAGES_RETENTION_DAYS — раз в час
+```
+
+## Процесс (`bootstrap/main.py`)
+
+`alembic upgrade head` → `RuntimeConfig.load` → `reset_resolving` → задачи под `supervise` (падение/выход →
+перезапуск с паузой 5 → 10 → … ≤ 300 с): `pool`, `classify`, `deliver`, `copy-edit`, `redeliver-stale`,
+`purge-messages`, `bot` (aiogram polling).
