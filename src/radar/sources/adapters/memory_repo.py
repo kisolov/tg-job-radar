@@ -45,16 +45,60 @@ class InMemorySourceRepository:
         c.sort(key=lambda s: (-s.priority, s.id))
         return deepcopy(c[:limit])
 
+    async def claim_candidate(self) -> Source | None:
+        c = [s for s in self.rows.values() if s.status is SourceStatus.candidate]
+        if not c:
+            return None
+        s = min(c, key=lambda s: (-s.priority, s.id))
+        s.status = SourceStatus.resolving
+        s.version += 1
+        return deepcopy(s)
+
+    async def reset_resolving(self) -> int:
+        stuck = [s for s in self.rows.values() if s.status is SourceStatus.resolving]
+        for s in stuck:
+            s.status = SourceStatus.candidate
+            s.version += 1
+        return len(stuck)
+
+    def _peer_taken(self, source_id: int, peer_id: int | None) -> bool:
+        return peer_id is not None and any(o.peer_id == peer_id and o.id != source_id for o in self.rows.values())
+
+    def _reject(self, s: Source) -> None:
+        s.status = SourceStatus.rejected
+        s.version += 1
+
     async def set_resolved(self, source_id, peer_id, access_hash, kind, title) -> bool:
         s = self.rows[source_id]
-        if any(o.peer_id == peer_id and o.id != source_id for o in self.rows.values()):
-            s.status = SourceStatus.rejected
-            s.version += 1
+        if self._peer_taken(source_id, peer_id):
+            self._reject(s)
             return False
         s.peer_id, s.access_hash, s.kind, s.title = peer_id, access_hash, kind, title
         s.status = SourceStatus.active
         s.version += 1
         return True
+
+    async def set_peer(self, source_id: int, peer_id: int, access_hash: int) -> bool:
+        s = self.rows[source_id]
+        if self._peer_taken(source_id, peer_id):
+            self._reject(s)
+            return False
+        s.peer_id, s.access_hash = peer_id, access_hash
+        s.version += 1
+        return True
+
+    async def set_polled(self, source_id: int, at) -> None:
+        self.rows[source_id].last_polled_at = at
+
+    async def due_for_poll(self, account_id: UUID, before, limit: int) -> list[Source]:
+        due = [
+            s for s in self.rows.values()
+            if s.assigned_account_id == account_id and s.status is SourceStatus.active
+            and (s.kind is SourceKind.channel or s.joined)
+            and (s.last_polled_at is None or s.last_polled_at <= before)
+        ]
+        due.sort(key=lambda s: (s.last_polled_at is not None, s.last_polled_at or 0, s.id))
+        return deepcopy(due[:limit])
 
     async def mark(self, source_id: int, status: SourceStatus) -> None:
         s = self.rows[source_id]
@@ -115,5 +159,5 @@ class InMemorySourceRepository:
                             if s.kind is kind and s.assigned_account_id is not None))
 
     async def set_cursor(self, source_id: int, last_message_id: int) -> None:
-        s = self.rows[source_id]
-        s.last_message_id = max(s.last_message_id, last_message_id)
+        if s := self.rows.get(source_id):  # как UPDATE в SQL: нет строки — нет изменений
+            s.last_message_id = max(s.last_message_id, last_message_id)

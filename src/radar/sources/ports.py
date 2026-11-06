@@ -12,8 +12,25 @@ class SourceRepository(Protocol):
     async def find(self, ref: str) -> Source | None: ...
     async def next_to_resolve(self, limit: int) -> list[Source]: ...
 
-    async def set_resolved(self, source_id: int, peer_id: int, access_hash: int, kind: SourceKind, title: str) -> bool:
-        """→ active. Если peer_id уже есть у другого источника — этот → rejected, False (R7)."""
+    async def claim_candidate(self) -> Source | None:
+        """Взять кандидата с наибольшим priority и перевести в `resolving` (SKIP LOCKED: не двоим)."""
+
+    async def set_resolved(
+        self, source_id: int, peer_id: int | None, access_hash: int | None, kind: SourceKind, title: str
+    ) -> bool:
+        """→ active. peer_id None — инвайт, id узнаем при вступлении.
+        Если peer_id уже есть у другого источника — этот → rejected, False (R7)."""
+
+    async def reset_resolving(self) -> int:
+        """После рестарта: зависшие `resolving` → `candidate`."""
+
+    async def set_peer(self, source_id: int, peer_id: int, access_hash: int) -> bool:
+        """id чата, узнанный при вступлении по инвайту. Дубль peer_id → rejected, False (R7)."""
+
+    async def set_polled(self, source_id: int, at) -> None: ...
+    async def due_for_poll(self, account_id: UUID, before, limit: int) -> list[Source]:
+        """Закреплённые за аккаунтом active каналы и вступленные группы, не опрошенные с `before`;
+        никогда не опрошенные первыми, затем самые давние."""
 
     async def mark(self, source_id: int, status: SourceStatus) -> None: ...
 

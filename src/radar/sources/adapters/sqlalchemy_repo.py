@@ -61,6 +61,45 @@ class SqlAlchemySourceRepository:
         return await self._select(t.c.status == SourceStatus.candidate.value,
                                   order=(t.c.priority.desc(), t.c.id), limit=limit)
 
+    async def claim_candidate(self) -> Source | None:
+        pick = (sa.select(t.c.id).where(t.c.status == SourceStatus.candidate.value)
+                .order_by(t.c.priority.desc(), t.c.id).limit(1).with_for_update(skip_locked=True)
+                .scalar_subquery())
+        async with transaction(self._sf) as s:
+            r = (await s.execute(
+                t.update().where(t.c.id == pick)
+                .values(status=SourceStatus.resolving.value, version=t.c.version + 1, updated_at=sa.func.now())
+                .returning(*t.c)
+            )).first()
+        return _row(r) if r else None
+
+    async def reset_resolving(self) -> int:
+        async with transaction(self._sf) as s:
+            return (await s.execute(t.update().where(t.c.status == SourceStatus.resolving.value).values(
+                status=SourceStatus.candidate.value, version=t.c.version + 1))).rowcount
+
+    async def set_peer(self, source_id: int, peer_id: int, access_hash: int) -> bool:
+        try:
+            async with transaction(self._sf) as s:
+                await s.execute(t.update().where(t.c.id == source_id).values(
+                    peer_id=peer_id, access_hash=access_hash, version=t.c.version + 1, updated_at=sa.func.now()))
+            return True
+        except IntegrityError:
+            await self.mark(source_id, SourceStatus.rejected)
+            return False
+
+    async def set_polled(self, source_id: int, at) -> None:
+        async with transaction(self._sf) as s:
+            await s.execute(t.update().where(t.c.id == source_id).values(last_polled_at=at))
+
+    async def due_for_poll(self, account_id: UUID, before, limit: int) -> list[Source]:
+        return await self._select(
+            t.c.assigned_account_id == account_id, t.c.status == SourceStatus.active.value,
+            sa.or_(t.c.kind == SourceKind.channel.value, t.c.joined.is_(True)),
+            sa.or_(t.c.last_polled_at.is_(None), t.c.last_polled_at <= before),
+            order=(t.c.last_polled_at.asc().nulls_first(), t.c.id), limit=limit,
+        )
+
     async def set_resolved(self, source_id, peer_id, access_hash, kind, title) -> bool:
         try:
             async with transaction(self._sf) as s:

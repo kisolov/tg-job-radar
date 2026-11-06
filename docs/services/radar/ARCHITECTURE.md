@@ -9,6 +9,7 @@
 |---|---|---|
 | `shared` | настройки, БД, часы | — |
 | `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
+| `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
 
 ### sources
@@ -51,4 +52,5 @@ PostgreSQL, одна схема. Таблицы описаны в `src/radar/sha
 |---|---|
 | `settings_overrides(key, value)` | настройки, перекрывающие env (меняются командой бота `/set`) |
 | `accounts` | пул аккаунтов: шифрованные секреты, статус, `membership_count`, `join_state`/`resolve_state` (JSONB-снимок `Pacer`), `version` |
+| `messages(source_id, message_id, seen_at)` | журнал виденных сообщений (R2), чистится старше `MESSAGES_RETENTION_DAYS` |
 | `sources` | каталог: ключи (`username`/`invite_hash`/`peer_id`, все unique), тип, статус, закрепление, курсор опроса, статистика |

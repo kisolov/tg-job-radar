@@ -121,6 +121,56 @@ async def test_list_assigned_and_unassigned(source_repo, account_repo_shared):
     assert await source_repo.list_assigned(a.id, SourceKind.channel) == []
 
 
+async def test_claim_candidate_once(source_repo):
+    a = await source_repo.add_candidate("chan_a", "seed", 5)
+    b = await source_repo.add_candidate("chan_b", "seed", 10)
+    got = await asyncio.gather(source_repo.claim_candidate(), source_repo.claim_candidate(), source_repo.claim_candidate())
+    ids = [s.id for s in got if s]
+    assert sorted(ids) == sorted([a.id, b.id]) and got.count(None) == 1
+    assert (await source_repo.get(b.id)).status is SourceStatus.resolving
+
+
+async def test_reset_resolving_after_crash(source_repo):
+    a = await source_repo.add_candidate("chan_a", "seed", 5)
+    await source_repo.claim_candidate()
+    assert await source_repo.reset_resolving() == 1
+    assert (await source_repo.get(a.id)).status is SourceStatus.candidate
+
+
+async def test_resolved_without_peer_then_set_peer(source_repo):
+    a = await source_repo.add_candidate("+inv_a", "seed", 5)
+    b = await source_repo.add_candidate("chan_b", "seed", 5)
+    assert await source_repo.set_resolved(a.id, None, None, SourceKind.group, "A")
+    assert await source_repo.set_resolved(b.id, 77, 1, SourceKind.channel, "B")
+    assert not await source_repo.set_peer(a.id, 77, 5)  # уже известный чат → дубль
+    assert (await source_repo.get(a.id)).status is SourceStatus.rejected
+    c = await source_repo.add_candidate("+inv_c", "seed", 5)
+    await source_repo.set_resolved(c.id, None, None, SourceKind.group, "C")
+    assert await source_repo.set_peer(c.id, 78, 5)
+    assert (await source_repo.get(c.id)).peer_id == 78
+
+
+async def test_due_for_poll(source_repo, account_repo_shared):
+    from datetime import UTC, datetime, timedelta
+
+    now = datetime(2026, 11, 4, 12, 0, tzinfo=UTC)
+    acc = make_account()
+    await account_repo_shared.add(acc)
+    old = await _group(source_repo, "grp_old", 1)
+    fresh = await _group(source_repo, "grp_new", 2)
+    notjoined = await _group(source_repo, "grp_wait", 3)
+    ch = await source_repo.add_candidate("chan_x", "seed", 5)
+    await source_repo.set_resolved(ch.id, 9, 1, SourceKind.channel, "X")
+    for s in (old, fresh, notjoined, ch):
+        await source_repo.assign(s.id, acc.id)
+    await source_repo.set_joined(old.id)
+    await source_repo.set_joined(fresh.id)
+    await source_repo.set_polled(old.id, now - timedelta(minutes=10))
+    await source_repo.set_polled(fresh.id, now - timedelta(minutes=1))
+    due = await source_repo.due_for_poll(acc.id, now - timedelta(minutes=5), 10)
+    assert [s.id for s in due] == [ch.id, old.id]  # никогда не опрошенные — первыми; невступившие — нет
+
+
 async def test_find_by_ref(source_repo):
     s = await source_repo.add_candidate("chan_x", "seed", 5)
     assert (await source_repo.find("chan_x")).id == s.id

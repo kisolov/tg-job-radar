@@ -50,6 +50,14 @@ sources = sa.Table(
     sa.Index("ix_sources_assigned", "assigned_account_id", "kind"),
 )
 
+messages = sa.Table(
+    "messages", metadata,
+    sa.Column("source_id", sa.BigInteger, primary_key=True),
+    sa.Column("message_id", sa.BigInteger, primary_key=True),
+    sa.Column("seen_at", TS, nullable=False),
+    sa.Index("ix_messages_seen_at", "seen_at"),
+)
+
 settings_overrides = sa.Table(
     "settings_overrides", metadata,
     sa.Column("key", sa.Text, primary_key=True),

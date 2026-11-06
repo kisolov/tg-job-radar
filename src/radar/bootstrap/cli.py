@@ -29,6 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     simp.add_argument("file", type=Path)
     sadd = src.add_parser("add", help="добавить источники (ссылки через пробел)")
     sadd.add_argument("links", nargs="+")
+    ssearch = src.add_parser("search", help="глобальный поиск Telegram; находки → кандидаты")
+    ssearch.add_argument("queries", nargs="+", help="запросы (каждый в кавычках)")
     return parser
 
 
@@ -48,6 +50,11 @@ async def _sources(args, c) -> int:
     elif args.cmd == "add":
         r = await c.add_source().execute(" ".join(args.links))
         print(f"добавлено: {', '.join(r.added) or '—'}; уже были: {', '.join(r.duplicates) or '—'}")
+    elif args.cmd == "search":
+        r = await c.search_sources().execute(args.queries)
+        print(f"найдено новых {len(r.added)}, уже были {len(r.duplicates)}")
+        for ref in r.added:
+            print(f"  + {ref}")
     return 0
 
 
@@ -81,6 +88,7 @@ async def _accounts(args, c) -> int:
 def main() -> None:
     from radar.bootstrap.di import Container
 
+    build_parser().parse_args(sys.argv[1:])  # --help и ошибки аргументов — до чтения настроек
     container = Container()
 
     async def _go() -> int:

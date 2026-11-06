@@ -101,6 +101,14 @@ class AccountService:
                     woken.append(done)
         return woken
 
+    async def mark_membership_full(self, account_id: UUID, cap: int) -> Account | None:
+        """Telegram ответил ChannelsTooMuch: считать аккаунт заполненным, новые группы ему не давать (R4)."""
+
+        def change(a: Account) -> None:
+            a.membership_count = max(a.membership_count, cap)
+
+        return await self._mutate(account_id, change)
+
     async def disable(self, account_id: UUID) -> Account | None:
         def change(a: Account) -> None:
             a.status = AccountStatus.disabled

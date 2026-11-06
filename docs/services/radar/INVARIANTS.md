@@ -4,6 +4,7 @@
 
 | # | Инвариант | Где держится |
 |---|---|---|
+| R2 | Сообщение `(source_id, message_id)` проходит отбор не больше одного раза (в окне `MESSAGES_RETENTION_DAYS`) | PK `messages(source_id, message_id)` + `INSERT … ON CONFLICT DO NOTHING RETURNING`; в конвейер идёт только вставивший |
 | R3 | Источник закреплён не больше чем за одним аккаунтом | conditional write `UPDATE sources SET assigned_account_id=:a WHERE id=:s AND assigned_account_id IS NULL` (`SourceRepository.assign`) |
 | R4 | `accounts.membership_count ≤ MEMBERSHIP_CAP`; счётчик = число закреплённых за аккаунтом групп | закрепление группы и `membership_count+1 WHERE membership_count < cap` — одна транзакция; `release`/`release_all_of` уменьшают в той же транзакции (не ниже 0); обе записи поднимают `accounts.version` |
 | R7 | Источник в каталоге один раз | unique по `username`, `invite_hash`, `peer_id`; `add_candidate … ON CONFLICT DO NOTHING`; инвайт, разрешившийся в уже известный `peer_id`, → `rejected` |

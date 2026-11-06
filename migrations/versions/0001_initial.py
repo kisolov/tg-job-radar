@@ -62,9 +62,17 @@ def upgrade() -> None:
     )
     op.create_index("ix_sources_resolve_queue", "sources", ["status", sa.text("priority DESC"), "id"])
     op.create_index("ix_sources_assigned", "sources", ["assigned_account_id", "kind"])
+    op.create_table(
+        "messages",
+        sa.Column("source_id", sa.BigInteger, primary_key=True),
+        sa.Column("message_id", sa.BigInteger, primary_key=True),
+        sa.Column("seen_at", TS, nullable=False),
+    )
+    op.create_index("ix_messages_seen_at", "messages", ["seen_at"])
 
 
 def downgrade() -> None:
+    op.drop_table("messages")
     op.drop_table("sources")
     op.drop_table("accounts")
     op.drop_table("settings_overrides")

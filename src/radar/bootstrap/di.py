@@ -11,6 +11,9 @@ from radar.accounts.adapters.sqlalchemy_repo import SqlAlchemyAccountRepository
 from radar.accounts.entities import PacingPolicy
 from radar.accounts.service import AccountService
 from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts, LoginAccount
+from radar.ingest.adapters.sqlalchemy_log import SqlAlchemyMessageLog
+from radar.ingest.adapters.telethon_gateway import TelethonGatewayFactory
+from radar.ingest.usecases import SearchSources
 from radar.shared.clock import SystemClock
 from radar.shared.db import make_engine, make_session_factory
 from radar.shared.settings import Settings
@@ -59,3 +62,11 @@ class Container(containers.DeclarativeContainer):
     import_seeds = providers.Factory(ImportSeeds, service=source_service)
     assign_work = providers.Factory(AssignWork, service=source_service)
     release_account_sources = providers.Factory(ReleaseAccountSources, service=source_service)
+
+    # ingest
+    gateway_factory = providers.Singleton(TelethonGatewayFactory, box=secret_box, devices=devices)
+    message_log = providers.Singleton(SqlAlchemyMessageLog, sf=sessions)
+    search_sources = providers.Factory(
+        SearchSources, accounts=account_repo, account_service=account_service, sources=source_repo,
+        gateway_factory=gateway_factory, clock=clock,
+    )
