@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 
 from radar.findings.entities import Classification, Copy, Finding, FindingStatus
-from radar.findings.similarity import jaccard, pack, unpack
+from radar.findings.similarity import jaccard, pack, sketch, unpack
 from radar.ingest.ports import IncomingMessage
 
 
@@ -17,13 +17,27 @@ class InMemoryFindingRepository:
         self._lock = asyncio.Lock()
         self._next = 1
 
+    def _candidates(self, sh, since, threshold) -> list[Finding]:
+        n, mine = len(sh), set(sketch(sh))
+        out = []
+        for f in sorted(self.rows.values(), key=lambda f: f.id):
+            other = unpack(f.shingles)
+            if (f.created_at >= since and int(n * threshold) <= len(other) <= int(n / threshold) + 1
+                    and mine & set(sketch(other))):
+                out.append(f)
+        return out
+
+    async def dedup_candidates(self, sh, since, threshold) -> list[int]:
+        return [f.id for f in self._candidates(sh, since, threshold)] if sh else []
+
     async def cluster(self, msg: IncomingMessage, norm, fp, sh, window_days, threshold, now):
         async with self._lock:
             since = now - timedelta(days=window_days)
             recent = [f for f in self.rows.values() if f.created_at >= since]
             found = next((f for f in recent if f.fingerprint == fp), None)
             if found is None:
-                found = next((f for f in recent if jaccard(sh, unpack(f.shingles)) >= threshold), None)
+                found = next((f for f in self._candidates(sh, since, threshold)
+                              if jaccard(sh, unpack(f.shingles)) >= threshold), None) if sh else None
             new = found is None
             if new:
                 found = Finding(

@@ -13,6 +13,9 @@ class FindingRepository(Protocol):
         bool — создан новый кластер."""
 
     async def get(self, finding_id: int) -> Finding | None: ...
+    async def dedup_candidates(self, sh: set[int], since: datetime, threshold: float) -> list[int]:
+        """Находки окна, которые вообще могут быть дублем: подходящий размер и пересечение скетчей (M9)."""
+
     async def pending(self, limit: int) -> list[Finding]: ...
     async def oldest_pending_at(self) -> datetime | None: ...
 

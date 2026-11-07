@@ -2,10 +2,10 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import ARRAY, insert
 
 from radar.findings.entities import Classification, Copy, Finding, FindingStatus
-from radar.findings.similarity import jaccard, pack, unpack
+from radar.findings.similarity import jaccard, pack, sketch, unpack
 from radar.ingest.ports import IncomingMessage
 from radar.shared.db import SessionFactory, transaction
 from radar.shared.models import finding_copies as ct
@@ -30,6 +30,24 @@ class SqlAlchemyFindingRepository:
     def __init__(self, sf: SessionFactory) -> None:
         self._sf = sf
 
+    @staticmethod
+    def _candidates_q(sh, since, threshold):
+        n = len(sh)
+        # Жаккар ≥ t возможен только при min(|A|,|B|)/max(|A|,|B|) ≥ t — отсекаем по размеру;
+        # и почти наверняка при пересечении bottom-k скетчей — отсекаем по GIN-индексу (M9).
+        return sa.select(t.c.id, t.c.shingles).where(
+            t.c.created_at >= since,
+            t.c.shingle_count >= int(n * threshold),
+            t.c.shingle_count <= int(n / threshold) + 1,
+            t.c.sketch.overlap(sa.cast(sketch(sh), ARRAY(sa.BigInteger))),
+        ).order_by(t.c.id)
+
+    async def dedup_candidates(self, sh, since, threshold) -> list[int]:
+        if not sh:
+            return []
+        async with self._sf() as s:
+            return [r.id for r in (await s.execute(self._candidates_q(sh, since, threshold))).all()]
+
     async def cluster(self, msg: IncomingMessage, norm, fp, sh, window_days, threshold, now):
         since = now - timedelta(days=window_days)
         n = len(sh)
@@ -39,21 +57,14 @@ class SqlAlchemyFindingRepository:
                 sa.select(t).where(t.c.fingerprint == fp, t.c.created_at >= since).order_by(t.c.id).limit(1)
             )).first()
             if row is None and n:
-                # Жаккар ≥ t возможен только при min(|A|,|B|)/max(|A|,|B|) ≥ t — отсекаем по размеру.
-                candidates = (await s.execute(
-                    sa.select(t.c.id, t.c.shingles).where(
-                        t.c.created_at >= since,
-                        t.c.shingle_count >= int(n * threshold),
-                        t.c.shingle_count <= int(n / threshold) + 1,
-                    ).order_by(t.c.id)
-                )).all()
+                candidates = (await s.execute(self._candidates_q(sh, since, threshold))).all()
                 best = next((c.id for c in candidates if jaccard(sh, unpack(bytes(c.shingles))) >= threshold), None)
                 if best is not None:
                     row = (await s.execute(sa.select(t).where(t.c.id == best))).first()
             new = row is None
             if new:
                 row = (await s.execute(t.insert().values(
-                    fingerprint=fp, shingles=pack(sh), shingle_count=n, text_snapshot=msg.text,
+                    fingerprint=fp, shingles=pack(sh), shingle_count=n, sketch=sketch(sh), text_snapshot=msg.text,
                     link_snapshot=msg.link, sender_username=msg.sender_username, sender_id=msg.sender_id,
                     sender_is_user=msg.sender_is_user, status=FindingStatus.pending.value, created_at=now,
                 ).returning(*t.c))).first()

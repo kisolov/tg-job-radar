@@ -41,3 +41,26 @@ def test_different_vacancies_apart():
 def test_pack_roundtrip():
     sh = shingles(normalize(BASE))
     assert unpack(pack(sh)) == sh
+
+
+def test_sketch_overlaps_for_near_duplicates_and_not_for_strangers():
+    """M9: скетч (16 наименьших хэшей) — фильтр кандидатов: дубли (Жаккар ≥ 0.6) пересекаются, чужие — нет."""
+    import random
+
+    from radar.findings.similarity import SKETCH_K, sketch
+
+    rng = random.Random(7)
+    words = [f"слово{i}" for i in range(400)]
+    missed = 0
+    for _ in range(300):
+        base = rng.sample(words, 40)
+        dup = base[:]
+        for i in rng.sample(range(40), 6):  # ~15 % слов заменено — типичная перепечатка
+            dup[i] = rng.choice(words)
+        a, b = shingles(normalize(" ".join(base))), shingles(normalize(" ".join(dup)))
+        if jaccard(a, b) >= 0.6 and not set(sketch(a)) & set(sketch(b)):
+            missed += 1
+    assert missed == 0
+    stranger = shingles(normalize("совсем другой текст про продажу квартиры в центре города недорого"))
+    assert len(sketch(stranger)) == SKETCH_K
+    assert not set(sketch(stranger)) & set(sketch(shingles(normalize("ищем python разработчика fastapi удалённо"))))

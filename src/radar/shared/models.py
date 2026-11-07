@@ -1,6 +1,6 @@
 """SQLAlchemy Core-таблицы всех модулей (одна схема, один процесс)."""
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 
 metadata = sa.MetaData()
 
@@ -77,6 +77,7 @@ findings = sa.Table(
     sa.Column("fingerprint", sa.Text, nullable=False),
     sa.Column("shingles", sa.LargeBinary, nullable=False),
     sa.Column("shingle_count", sa.Integer, nullable=False),
+    sa.Column("sketch", ARRAY(sa.BigInteger), nullable=False, server_default="{}"),
     sa.Column("text_snapshot", sa.Text, nullable=False),
     sa.Column("link_snapshot", sa.Text, nullable=False),
     sa.Column("sender_username", sa.Text),
@@ -92,6 +93,7 @@ findings = sa.Table(
     sa.Column("created_at", TS, nullable=False),
     sa.Index("ix_findings_fp", "fingerprint", "created_at"),
     sa.Index("ix_findings_window", "created_at", "shingle_count"),
+    sa.Index("ix_findings_sketch", "sketch", postgresql_using="gin"),
     sa.Index("ix_findings_status", "status", "created_at"),
 )
 

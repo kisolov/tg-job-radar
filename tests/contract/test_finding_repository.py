@@ -132,3 +132,18 @@ async def test_fail_delivery_only_from_delivering(finding_repo):
     assert (await finding_repo.get(f.id)).status is FindingStatus.failed
     assert not await finding_repo.fail_delivery(f.id)
     assert await finding_repo.accepted(10) == []
+
+
+async def test_dedup_candidates_skip_unrelated_findings_of_similar_size(finding_repo):
+    """M9: под блокировкой дедупа сравниваются только находки с пересекающимся скетчем."""
+    import random
+
+    rng = random.Random(3)
+    alphabet = "абвгдежзиклмнопрстуфхцчшщэюя"
+    for i in range(40):  # тексты той же длины, но другие — раньше все распаковывались и сравнивались
+        noise = "".join(rng.choice(alphabet) for _ in range(len(TEXT)))
+        await cluster(finding_repo, msg(100 + i, text=noise))
+    target, _ = await cluster(finding_repo, msg(1))
+    norm = normalize("🔥 " + TEXT + " #python")
+    got = await finding_repo.dedup_candidates(shingles(norm), T0 - timedelta(days=7), 0.6)
+    assert got == [target.id]

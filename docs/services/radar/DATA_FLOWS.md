@@ -36,6 +36,8 @@ MessageSink = ClusterMessage.submit(msg)
   ├─ prefilter(text) ≠ pass → daily_stats.read+1, конец
   ├─ daily_stats.read+1, passed_prefilter+1
   ├─ FindingService.cluster → FindingRepository.cluster (advisory lock): новый pending-кластер или копия
+  │    кандидаты в дубли: тот же fingerprint, иначе размер в [n·t, n/t] и пересечение bottom-16 скетчей
+  │    (GIN по `findings.sketch`, M9) → Жаккар ≥ 0.6 только по ним
   └─ копия уже доставленной находки → CopyAttached → AttachCopyEdit правит карточку (R9)
 
 ClassifyPending.run_forever

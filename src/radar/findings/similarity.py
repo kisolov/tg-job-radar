@@ -31,6 +31,15 @@ def shingles(norm: str, k: int = 5) -> set[int]:
     return {zlib.crc32(norm[i:i + k].encode()) for i in range(len(norm) - k + 1)}
 
 
+SKETCH_K = 16
+
+
+def sketch(sh: set[int], k: int = SKETCH_K) -> list[int]:
+    """k наименьших хэшей шинглов (bottom-k). Если Жаккар(A, B) ≥ t, скетчи пересекаются с вероятностью
+    ≥ 1 − (1 − t)^k (для t = 0.6, k = 16 — промах ~4·10⁻⁷): фильтр кандидатов в дубли по GIN-индексу (M9)."""
+    return sorted(sh)[:k]
+
+
 def jaccard(a: set[int], b: set[int]) -> float:
     if not a or not b:
         return 0.0

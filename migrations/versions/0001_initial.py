@@ -4,7 +4,7 @@ Revision ID: 0001
 """
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 
 TS = sa.DateTime(timezone=True)
 
@@ -101,6 +101,7 @@ def upgrade() -> None:
         sa.Column("fingerprint", sa.Text, nullable=False),
         sa.Column("shingles", sa.LargeBinary, nullable=False),
         sa.Column("shingle_count", sa.Integer, nullable=False),
+        sa.Column("sketch", ARRAY(sa.BigInteger), nullable=False, server_default="{}"),
         sa.Column("text_snapshot", sa.Text, nullable=False),
         sa.Column("link_snapshot", sa.Text, nullable=False),
         sa.Column("sender_username", sa.Text),
@@ -117,6 +118,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_findings_fp", "findings", ["fingerprint", "created_at"])
     op.create_index("ix_findings_window", "findings", ["created_at", "shingle_count"])
+    op.create_index("ix_findings_sketch", "findings", ["sketch"], postgresql_using="gin")
     op.create_index("ix_findings_status", "findings", ["status", "created_at"])
     op.create_table(
         "finding_copies",
