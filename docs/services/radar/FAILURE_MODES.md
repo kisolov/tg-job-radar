@@ -36,7 +36,8 @@
 | `ChannelPrivate`, `UsernameInvalid/NotOccupied`, `UserBannedInChannel`, `InviteHashExpired/Invalid`, `ChannelBanned`, `ChatForbidden` | `TgSourceGone` | источник `dead`, закрепление снимается, счётчик членств −1 |
 | `InviteRequestSentError` | `TgJoinRequested` | источник `rejected`, закрепление снимается |
 | `ChannelsTooMuchError` | `TgChannelsTooMuch` | `membership_count = cap`, пауза вступлений 1 ч |
-| прочие (сеть и т.п.) | — | шаг логируется, корутина живёт; переподключение — Telethon |
+| прочие на одном источнике (`ChatIdInvalid`, таймаут, …) | — | опрос: лог, `set_polled`, следующий источник (I3); выход из чата: лог, слот освобождается |
+| `ConnectionError` / клиент отключён (`is_connected()` = False) | — | корутина аккаунта завершается, `PoolRunner.sync` (раз в 60 с) создаёт её со свежим клиентом (I2) |
 | Инвайт привёл в уже известный чат | — | источник `rejected`, выход из чата, слот освобождается (R7) |
 
 ### Панель

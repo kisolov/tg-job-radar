@@ -12,11 +12,13 @@ from radar.ingest.ports import (
     MessageLog,
     MessageSink,
     TelegramGateway,
+    TgBanned,
     TgChannelsTooMuch,
     TgFlood,
     TgJoinRequested,
     TgPeerStale,
     TgSourceGone,
+    TgUnauthorized,
 )
 from radar.shared.clock import Clock
 from radar.sources.entities import SourceStatus
@@ -67,6 +69,12 @@ class PollChannels:
                 continue
             except TgPeerStale:
                 await self._sources.requeue(source.id)  # хэш не этого аккаунта (C2): перерезолвить
+                continue
+            except (TgFlood, TgBanned, TgUnauthorized, ConnectionError):
+                raise  # дело аккаунта, не источника
+            except Exception:  # I3: один битый источник не держит очередь опроса
+                logger.exception("Опрос источника %s упал, следующий через интервал", source.ref)
+                await self._sources.set_polled(source.id, now)
                 continue
             if first:
                 # Первый опрос не тащит в отбор старую историю: только последние сутки, остальное — курсор.

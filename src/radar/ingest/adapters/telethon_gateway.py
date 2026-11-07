@@ -138,6 +138,9 @@ class TelethonGateway:
         if self._client.is_connected():
             await self._client.disconnect()
 
+    def is_connected(self) -> bool:
+        return self._client.is_connected()
+
     def on_message(self, callback: MessageCallback) -> None:
         self._callback = callback
 

@@ -67,6 +67,10 @@ class AccountWorker:
         if account is None or account.status is not AccountStatus.active:
             await self.gateway.stop()
             return False
+        if not self.gateway.is_connected():
+            logger.warning("Аккаунт %s: связь с Telegram потеряна, переподключение при синхронизации пула", account.phone)
+            await self.gateway.stop()
+            return False
         try:
             await self._housekeeping(account)
             await self._join.tick(self.account_id, self.gateway)
@@ -77,6 +81,10 @@ class AccountWorker:
             return False
         except TgUnauthorized as e:
             await self._fail(AccountStatus.unauthorized, str(e) or "TgUnauthorized")
+            return False
+        except ConnectionError:
+            logger.warning("Аккаунт %s: обрыв связи, переподключение при синхронизации пула", account.phone)
+            await self.gateway.stop()
             return False
         except Exception:
             logger.exception("Сбой шага аккаунта %s, продолжаем", account.phone)
@@ -90,6 +98,10 @@ class AccountWorker:
                 await self.gateway.leave(s)
             except TgSourceGone:
                 pass  # нас уже нет в чате
+            except (TgFlood, TgBanned, TgUnauthorized, ConnectionError):
+                raise
+            except Exception:  # I3: битый выход не держит весь шаг; слот освобождаем всё равно
+                logger.exception("Не удалось выйти из %s, слот освобождён", s.ref)
             await self._sources.release(s.id)
         joined = [s for s in await self._sources.list_members(self.account_id)
                   if s.joined and s.status is SourceStatus.active]
@@ -151,11 +163,16 @@ class PoolRunner:
         await self._assign.execute()
 
     async def _run(self, worker: AccountWorker) -> None:
+        """Корутина аккаунта. Завершилась (обрыв связи, сбой старта) — следующий sync() создаст её заново."""
         try:
             if not await worker.start():
                 return
             while await worker.step():
                 await self._sleep(TICK_S)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Корутина аккаунта %s упала, перезапуск при синхронизации", worker.account_id)
         finally:
             await worker.gateway.stop()
 

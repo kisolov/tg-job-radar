@@ -57,6 +57,7 @@ class FakeGateway:
     def __init__(self, world: FakeTelegram, account: Account) -> None:
         self.world, self.account = world, account
         self.started = False
+        self.connected = False
         self.callback: MessageCallback | None = None
         self.watched: set[int] = set()
         self.left: list[str] = []
@@ -69,10 +70,13 @@ class FakeGateway:
 
     async def start(self) -> None:
         self._check("start", None)
-        self.started = True
+        self.started = self.connected = True
 
     async def stop(self) -> None:
-        self.started = False
+        self.started = self.connected = False
+
+    def is_connected(self) -> bool:
+        return self.connected
 
     def on_message(self, callback: MessageCallback) -> None:
         self.callback = callback
