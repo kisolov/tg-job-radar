@@ -25,6 +25,7 @@ from radar.ingest.ports import (
     TgError,
     TgFlood,
     TgJoinRequested,
+    TgPeerStale,
     TgSourceGone,
     TgUnauthorized,
 )
@@ -38,7 +39,7 @@ _UNAUTHORIZED = (
     errors.SessionRevokedError, errors.SessionExpiredError, errors.AuthKeyDuplicatedError,
 )
 _GONE = (
-    errors.ChannelPrivateError, errors.ChannelInvalidError, errors.UsernameInvalidError,
+    errors.ChannelPrivateError, errors.UsernameInvalidError,
     errors.UsernameNotOccupiedError, errors.UserBannedInChannelError, errors.InviteHashExpiredError,
     errors.InviteHashInvalidError, errors.ChannelBannedError, errors.ChatForbiddenError,
     errors.ChannelPublicGroupNaError, errors.UsernamePurchaseAvailableError,
@@ -54,6 +55,8 @@ def map_error(exc: BaseException) -> TgError | None:
         return TgBanned(type(exc).__name__)
     if isinstance(exc, _UNAUTHORIZED):
         return TgUnauthorized(type(exc).__name__)
+    if isinstance(exc, errors.ChannelInvalidError):
+        return TgPeerStale(type(exc).__name__)  # хэш не этого аккаунта (C2), чат жив
     if isinstance(exc, _GONE):
         return TgSourceGone(type(exc).__name__)
     if isinstance(exc, errors.InviteRequestSentError):
@@ -184,7 +187,7 @@ class TelethonGateway:
 
     @_mapped
     async def join(self, source: Source) -> Peer:
-        if source.peer_id is None and source.invite_hash:
+        if source.invite_hash:  # всегда импорт приглашения: хэш из каталога может быть чужим, а чат — приватным
             try:
                 updates = await self._client(ImportChatInviteRequest(source.invite_hash[1:]))
                 chat = updates.chats[0]

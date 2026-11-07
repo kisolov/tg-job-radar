@@ -137,6 +137,7 @@ async def test_sources_tabs_sort_and_counts(seed, rm):
     await seed.source("freelance", kind="group", joined=True, account=acc, found=9, read=6410)
     await seed.source("bots_orders", kind="group", joined=False, account=acc)
     await seed.source("+AbCdEf", status="candidate", kind=None, added_by="discovery")
+    await seed.source("+PrivCh", kind="channel", joined=False, account=acc)  # приватный канал ждёт вступления
     await seed.source("hh_feed", status="rejected")
     await seed.source("old_chat", status="dead")
 
@@ -149,6 +150,7 @@ async def test_sources_tabs_sort_and_counts(seed, rm):
 
     waiting = await rm.sources(SourcesFilter(tab="waiting"))
     assert {(r.ref, r.status) for r in waiting.items} == {("bots_orders", "awaiting_join"),
+                                                          ("+PrivCh", "awaiting_join"),
                                                           ("+AbCdEf", "awaiting_resolve")}
     invite = next(r for r in waiting.items if r.ref == "+AbCdEf")
     assert invite.link == "https://t.me/+AbCdEf"
@@ -160,6 +162,6 @@ async def test_sources_tabs_sort_and_counts(seed, rm):
     await seed.finding("delivered", delivered_at=T0, classification=cls(), copies=(("pyjobs", fid_source),))
     c = await rm.source_counts(T0 - timedelta(days=7))
     assert (c.reading, c.reading_groups, c.reading_channels) == (2, 1, 1)
-    assert (c.awaiting_join, c.awaiting_resolve, c.resolve_from_discovery) == (1, 1, 1)
+    assert (c.awaiting_join, c.awaiting_resolve, c.resolve_from_discovery) == (2, 1, 1)
     assert (c.dead, c.rejected, c.productive) == (1, 1, 1)
-    assert await rm.channels_by_account() == {acc: 1}
+    assert await rm.channels_by_account() == {acc: 2}  # каналы на аккаунте, включая ждущий вступления

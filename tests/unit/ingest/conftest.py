@@ -68,10 +68,14 @@ class World:
         await self.accounts.add(a)
         return a
 
-    async def add_source(self, ref: str, kind: SourceKind, peer: int, account=None, priority: int = 5):
+    async def add_source(self, ref: str, kind: SourceKind, peer: int, account=None, priority: int = 5,
+                         resolver=None):
+        """Источник, отрезолвленный `resolver` (по умолчанию — тем, за кем закреплён): хэш — его (C2)."""
+        resolver = resolver or account
         s = await self.sources.add_candidate(ref, "seed", priority)
-        await self.sources.set_resolved(s.id, peer, 1, kind, ref)
-        self.tg.chats[ref] = Resolved(peer, 1, kind, ref)
+        h = FakeTelegram.hash_for(peer, resolver) if resolver else None
+        await self.sources.set_resolved(s.id, peer, h, kind, ref, account_id=resolver.id if resolver else None)
+        self.tg.chats[ref] = Resolved(peer, None, kind, ref)
         if account is not None:
             assert await self.sources.assign(s.id, account.id)
         return await self.sources.get(s.id)

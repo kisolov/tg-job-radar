@@ -42,6 +42,12 @@ class Source:
     read_count: int = 0
     passed_count: int = 0
     activated_at: datetime | None = None
+    hash_account_id: UUID | None = None  # access_hash выдан этому аккаунту; другим он не годится (C2)
+
+    @property
+    def needs_membership(self) -> bool:
+        """Читать можно только изнутри: группа (live-апдейты) или любой чат по инвайту (приватный). Занимает слот R4."""
+        return self.kind is SourceKind.group or self.invite_hash is not None
 
     @property
     def ref(self) -> str:

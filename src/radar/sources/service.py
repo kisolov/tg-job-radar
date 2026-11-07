@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from radar.accounts.entities import AccountStatus
 from radar.accounts.ports import AccountRepository
 from radar.screening.prefilter import is_aggregator_only, is_russian
 from radar.shared.settings import DEFAULT_AGGREGATORS
@@ -11,6 +12,7 @@ from radar.sources.entities import AddedBy, SourceKind, SourceStatus
 from radar.sources.ports import SourceRepository
 
 ASSIGN_BATCH = 1000
+GONE = (AccountStatus.banned, AccountStatus.unauthorized, AccountStatus.disabled)  # хэши таких не оживут
 USEFULNESS_WINDOW = timedelta(days=14)
 USELESS_MIN_READ = 100
 RELAY_MIN_SAMPLE = 20
@@ -74,25 +76,36 @@ class SourceService:
         return len(useless)
 
     async def assign_work(self, now: datetime | None = None) -> int:
-        """Раздать свободные active-источники active-аккаунтам: каждому — наименее загруженный аккаунт.
+        """Раздать свободные active-источники active-аккаунтам.
 
-        Нагрузка по группам — membership_count (R4), по каналам — число закреплённых каналов. Если все аккаунты
-        упёрлись в лимит членства, а группа ждёт, — одна вступленная группа без находок за 14 суток снимается.
+        Источник с access_hash — только его владельцу (hash_account_id, C2): хэш другого аккаунта Telegram не
+        примет. Владелец выбыл (бан, разлогин, выключен) → источник на повторный резолв; владелец в паузе → ждёт.
+        Без хэша — наименее загруженному: по членству — membership_count (R4), без — число закреплённых.
+        Если все аккаунты упёрлись в лимит членства, а источник ждёт, — одна вступленная группа без находок
+        за 14 суток снимается.
         """
-        active = await self._accounts.list_active()
+        accounts = await self._accounts.list_all()
+        active = {a.id for a in accounts if a.status is AccountStatus.active}
+        alive = {a.id for a in accounts if a.status not in GONE}
         if not active:
             return 0
         assigned = 0
         all_full = False
-        for kind in (SourceKind.group, SourceKind.channel):
-            if kind is SourceKind.group:
-                load = {a.id: a.membership_count for a in active}
+        for membership in (True, False):
+            if membership:
+                load = {a.id: a.membership_count for a in accounts if a.id in active}
             else:
-                counts = await self._sources.assigned_counts(kind)
-                load = {a.id: counts.get(a.id, 0) for a in active}
-            for source in await self._sources.list_unassigned(kind, ASSIGN_BATCH):
-                while load:
-                    account_id = min(load, key=lambda k: load[k])
+                counts = await self._sources.assigned_counts(False)
+                load = {a: counts.get(a, 0) for a in active}
+            for source in await self._sources.list_unassigned(membership, ASSIGN_BATCH):
+                owner = source.hash_account_id
+                if owner is not None and owner not in alive:
+                    await self._sources.requeue(source.id)
+                    continue
+                if owner is not None and owner not in load:
+                    continue  # владелец в паузе или упёрся в лимит — источник ждёт его
+                candidates = [owner] if owner is not None else sorted(load, key=lambda k: load[k])
+                for account_id in candidates:
                     if await self._sources.assign(source.id, account_id):
                         load[account_id] += 1
                         assigned += 1
@@ -102,7 +115,7 @@ class SourceService:
                         break  # источник забрал кто-то другой
                     load.pop(account_id)  # аккаунт упёрся в лимит членства
                 if not load:
-                    all_full = kind is SourceKind.group
+                    all_full = membership
                     break
         if all_full and now is not None:
             victim = await self._sources.eviction_candidate(now - USEFULNESS_WINDOW)

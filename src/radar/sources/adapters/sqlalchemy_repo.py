@@ -22,7 +22,12 @@ def _row(r) -> Source:
         last_message_id=r.last_message_id, found_count=r.found_count, relay_score=r.relay_score,
         added_by=r.added_by, priority=r.priority, version=r.version, last_polled_at=r.last_polled_at,
         read_count=r.read_count, passed_count=r.passed_count, activated_at=r.activated_at,
+        hash_account_id=r.hash_account_id,
     )
+
+
+# Нужно членство (занимает слот R4): группа или любой чат по инвайту — см. Source.needs_membership.
+MEMBER = sa.or_(sa.func.coalesce(t.c.kind, "") == SourceKind.group.value, t.c.invite_hash.is_not(None))
 
 
 class SqlAlchemySourceRepository:
@@ -79,15 +84,29 @@ class SqlAlchemySourceRepository:
             return (await s.execute(t.update().where(t.c.status == SourceStatus.resolving.value).values(
                 status=SourceStatus.candidate.value, version=t.c.version + 1))).rowcount
 
-    async def set_peer(self, source_id: int, peer_id: int, access_hash: int) -> bool:
+    async def set_peer(self, source_id: int, peer_id: int, access_hash: int, account_id=None) -> bool:
         try:
             async with transaction(self._sf) as s:
                 await s.execute(t.update().where(t.c.id == source_id).values(
-                    peer_id=peer_id, access_hash=access_hash, version=t.c.version + 1, updated_at=sa.func.now()))
+                    peer_id=peer_id, access_hash=access_hash, hash_account_id=account_id, version=t.c.version + 1,
+                    updated_at=sa.func.now()))
             return True
         except IntegrityError:
             await self.mark(source_id, SourceStatus.rejected)
             return False
+
+    async def requeue(self, source_id: int) -> None:
+        async with transaction(self._sf) as s:
+            old = (await s.execute(
+                sa.select(t.c.assigned_account_id, MEMBER.label("member")).where(t.c.id == source_id).with_for_update()
+            )).first()
+            if old is None:
+                return
+            await s.execute(t.update().where(t.c.id == source_id).values(
+                assigned_account_id=None, joined=False, access_hash=None, hash_account_id=None,
+                status=SourceStatus.candidate.value, version=t.c.version + 1, updated_at=sa.func.now()))
+            if old.assigned_account_id is not None:
+                await self._decrement(s, old.assigned_account_id, int(old.member))
 
     async def set_polled(self, source_id: int, at) -> None:
         async with transaction(self._sf) as s:
@@ -96,16 +115,17 @@ class SqlAlchemySourceRepository:
     async def due_for_poll(self, account_id: UUID, before, limit: int) -> list[Source]:
         return await self._select(
             t.c.assigned_account_id == account_id, t.c.status == SourceStatus.active.value,
-            sa.or_(t.c.kind == SourceKind.channel.value, t.c.joined.is_(True)),
+            t.c.peer_id.is_not(None), sa.or_(sa.not_(MEMBER), t.c.joined.is_(True)),
             sa.or_(t.c.last_polled_at.is_(None), t.c.last_polled_at <= before),
             order=(t.c.last_polled_at.asc().nulls_first(), t.c.id), limit=limit,
         )
 
-    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None) -> bool:
+    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None, account_id=None) -> bool:
         try:
             async with transaction(self._sf) as s:
                 await s.execute(t.update().where(t.c.id == source_id).values(
                     peer_id=peer_id, access_hash=access_hash, kind=kind.value, title=title, activated_at=at,
+                    hash_account_id=account_id if access_hash is not None else None,
                     status=SourceStatus.active.value, version=t.c.version + 1, updated_at=sa.func.now(),
                 ))
             return True
@@ -125,11 +145,11 @@ class SqlAlchemySourceRepository:
                     t.update()
                     .where(t.c.id == source_id, t.c.assigned_account_id.is_(None))
                     .values(assigned_account_id=account_id, version=t.c.version + 1, updated_at=sa.func.now())
-                    .returning(t.c.kind)
+                    .returning(MEMBER)
                 )).scalar()
                 if kind is None:
                     raise _Rollback
-                if kind == SourceKind.group.value:
+                if kind:
                     res = await s.execute(
                         at.update()
                         .where(at.c.id == account_id, at.c.membership_count < self._cap)
@@ -149,23 +169,23 @@ class SqlAlchemySourceRepository:
     async def release(self, source_id: int) -> None:
         async with transaction(self._sf) as s:
             old = (await s.execute(
-                sa.select(t.c.assigned_account_id, t.c.kind)
+                sa.select(t.c.assigned_account_id, MEMBER.label("member"))
                 .where(t.c.id == source_id, t.c.assigned_account_id.is_not(None)).with_for_update()
             )).first()
             if old is None:
                 return
             await s.execute(t.update().where(t.c.id == source_id).values(
                 assigned_account_id=None, joined=False, version=t.c.version + 1, updated_at=sa.func.now()))
-            await self._decrement(s, old.assigned_account_id, int(old.kind == SourceKind.group.value))
+            await self._decrement(s, old.assigned_account_id, int(old.member))
 
     async def release_all_of(self, account_id: UUID) -> None:
         async with transaction(self._sf) as s:
             kinds = (await s.execute(
                 t.update().where(t.c.assigned_account_id == account_id)
                 .values(assigned_account_id=None, joined=False, version=t.c.version + 1, updated_at=sa.func.now())
-                .returning(t.c.kind)
+                .returning(MEMBER)
             )).scalars().all()
-            await self._decrement(s, account_id, sum(k == SourceKind.group.value for k in kinds))
+            await self._decrement(s, account_id, sum(bool(k) for k in kinds))
 
     async def set_joined(self, source_id: int) -> None:
         async with transaction(self._sf) as s:
@@ -174,15 +194,18 @@ class SqlAlchemySourceRepository:
     async def list_assigned(self, account_id: UUID, kind: SourceKind) -> list[Source]:
         return await self._select(t.c.assigned_account_id == account_id, t.c.kind == kind.value, order=(t.c.id,))
 
-    async def list_unassigned(self, kind: SourceKind, limit: int) -> list[Source]:
+    async def list_members(self, account_id: UUID) -> list[Source]:
+        return await self._select(t.c.assigned_account_id == account_id, MEMBER, order=(t.c.id,))
+
+    async def list_unassigned(self, membership: bool, limit: int) -> list[Source]:
         return await self._select(
-            t.c.status == SourceStatus.active.value, t.c.kind == kind.value, t.c.assigned_account_id.is_(None),
-            order=(t.c.priority.desc(), t.c.id), limit=limit,
+            t.c.status == SourceStatus.active.value, MEMBER if membership else sa.not_(MEMBER),
+            t.c.assigned_account_id.is_(None), order=(t.c.priority.desc(), t.c.id), limit=limit,
         )
 
-    async def assigned_counts(self, kind: SourceKind) -> dict[UUID, int]:
+    async def assigned_counts(self, membership: bool) -> dict[UUID, int]:
         q = (sa.select(t.c.assigned_account_id, sa.func.count())
-             .where(t.c.kind == kind.value, t.c.assigned_account_id.is_not(None))
+             .where(MEMBER if membership else sa.not_(MEMBER), t.c.assigned_account_id.is_not(None))
              .group_by(t.c.assigned_account_id))
         async with self._sf() as s:
             return {a: n for a, n in (await s.execute(q)).all()}

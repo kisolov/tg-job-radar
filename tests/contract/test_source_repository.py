@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 
 from radar.sources.entities import SourceKind, SourceStatus
 from tests.factories import make_account
@@ -117,7 +118,9 @@ async def test_list_assigned_and_unassigned(source_repo, account_repo_shared):
     free = await _group(source_repo, "grp_two", 2)
     await source_repo.assign(g.id, a.id)
     assert [s.id for s in await source_repo.list_assigned(a.id, SourceKind.group)] == [g.id]
-    assert [s.id for s in await source_repo.list_unassigned(SourceKind.group, 10)] == [free.id]
+    assert [s.id for s in await source_repo.list_unassigned(True, 10)] == [free.id]
+    assert await source_repo.list_unassigned(False, 10) == []
+    assert [s.id for s in await source_repo.list_members(a.id)] == [g.id]
     assert await source_repo.list_assigned(a.id, SourceKind.channel) == []
 
 
@@ -214,3 +217,42 @@ async def test_find_by_ref(source_repo):
     s = await source_repo.add_candidate("chan_x", "seed", 5)
     assert (await source_repo.find("chan_x")).id == s.id
     assert await source_repo.find("nope_nope") is None
+
+
+async def test_hash_owner_and_requeue(source_repo, account_repo_shared):
+    """C2: хэш принадлежит резолвившему; requeue снимает закрепление (слот −1), стирает хэш, → candidate."""
+    a = make_account()
+    await account_repo_shared.add(a)
+    s = await source_repo.add_candidate("grp_one", "seed", 5)
+    await source_repo.set_resolved(s.id, 1, 111, SourceKind.group, "G", account_id=a.id)
+    assert (await source_repo.get(s.id)).hash_account_id == a.id
+    assert await source_repo.assign(s.id, a.id)
+    assert (await account_repo_shared.get(a.id)).membership_count == 1
+    await source_repo.requeue(s.id)
+    got = await source_repo.get(s.id)
+    assert got.status is SourceStatus.candidate and got.assigned_account_id is None and not got.joined
+    assert got.access_hash is None and got.hash_account_id is None and got.peer_id == 1
+    assert (await account_repo_shared.get(a.id)).membership_count == 0
+
+
+async def test_invite_channel_needs_membership_and_is_polled_only_when_joined(source_repo, account_repo_shared):
+    """C3: канал по инвайту занимает слот, вступает через очередь и опрашивается только с peer_id."""
+    a = make_account()
+    await account_repo_shared.add(a)
+    s = await source_repo.add_candidate("+PrivHash", "seed", 10)
+    await source_repo.set_resolved(s.id, None, None, SourceKind.channel, "Priv", account_id=a.id)
+    s = await source_repo.get(s.id)
+    assert s.needs_membership and s.hash_account_id is None
+    assert [x.id for x in await source_repo.list_unassigned(True, 10)] == [s.id]
+    assert await source_repo.assign(s.id, a.id)
+    assert (await account_repo_shared.get(a.id)).membership_count == 1
+    assert [x.id for x in await source_repo.list_members(a.id)] == [s.id]
+    later = datetime(2030, 1, 1, tzinfo=UTC)
+    assert await source_repo.due_for_poll(a.id, later, 10) == []
+    assert await source_repo.set_peer(s.id, 4242, 9, account_id=a.id)
+    assert await source_repo.due_for_poll(a.id, later, 10) == []  # ещё не вступили
+    await source_repo.set_joined(s.id)
+    assert [x.id for x in await source_repo.due_for_poll(a.id, later, 10)] == [s.id]
+    assert (await source_repo.get(s.id)).hash_account_id == a.id
+    await source_repo.release(s.id)
+    assert (await account_repo_shared.get(a.id)).membership_count == 0

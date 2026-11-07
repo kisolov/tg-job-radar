@@ -32,7 +32,9 @@ _kind = _cls["kind"].astext
 
 # Статус источника на экране (см. спеку): вычисляется из status/kind/joined.
 UI_STATUS = sa.case(
-    (sa.and_(st.c.status == "active", sa.or_(st.c.kind == "channel", st.c.joined.is_(True))), "reading"),
+    # членство нужно группам и всем инвайтам (Source.needs_membership)
+    (sa.and_(st.c.status == "active", sa.or_(sa.and_(st.c.kind == "channel", st.c.invite_hash.is_(None)),
+                                             st.c.joined.is_(True))), "reading"),
     (st.c.status == "active", "awaiting_join"),
     (st.c.status.in_(("candidate", "resolving")), "awaiting_resolve"),
     else_=st.c.status,

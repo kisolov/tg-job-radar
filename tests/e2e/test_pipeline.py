@@ -1,4 +1,6 @@
 """Весь конвейер через DI-контейнер: настоящая БД, фейковые Telegram / LLM / бот, FakeClock."""
+import re
+
 from dependency_injector import providers
 
 from radar.bootstrap.di import Container
@@ -60,14 +62,17 @@ async def tick(c: Container, workers) -> None:
 
 
 async def setup_sources(c: Container, w: World) -> dict[int, int]:
-    for _ in range(2):
-        await c.account_repo().add(make_account())
+    accounts = [make_account() for _ in range(2)]
+    for a in accounts:
+        await c.account_repo().add(a)
     ids = {}
     for n in range(1, 7):
         repo = c.source_repo()
+        owner = accounts[n % 2]  # хэш выдан резолвившему аккаунту (C2)
         s = await repo.add_candidate(f"chan_{n:02d}", "seed", 5)
-        await repo.set_resolved(s.id, 100 + n, 1, SourceKind.channel, f"Канал {n}")
-        w.tg.chats[f"chan_{n:02d}"] = Resolved(100 + n, 1, SourceKind.channel, f"Канал {n}")
+        await repo.set_resolved(s.id, 100 + n, FakeTelegram.hash_for(100 + n, owner), SourceKind.channel,
+                                f"Канал {n}", account_id=owner.id)
+        w.tg.chats[f"chan_{n:02d}"] = Resolved(100 + n, None, SourceKind.channel, f"Канал {n}")
         ids[n] = s.id
     return ids
 
@@ -98,10 +103,13 @@ async def test_pipeline_end_to_end(pg_sessionmaker, clock):
     w, _ = await run_pipeline(pg_sessionmaker, clock)
     assert len(w.notifier.sent) == 1
     card = w.notifier.sent[0]
-    assert "👤 @author" in card and "Также в: Канал 2" in card  # фейковый LLM контакт не извлекает → отправитель
+    assert "👤 @author" in card  # фейковый LLM контакт не извлекает → отправитель
+    first = re.search(r'">(Канал \d)</a>', card).group(1)  # какая копия первая — зависит от порядка опроса
+    also = lambda text: text.rsplit("Также в: ", 1)[1].split(", ")  # noqa: E731
+    assert {first, *also(card)} == {"Канал 1", "Канал 2"}
     assert len(w.classifier.calls) == 1 and len(w.classifier.calls[0]) == 1  # дубли и мусор не дошли до LLM
     assert len(w.notifier.edits) == 1
-    assert w.notifier.edits[0][1].endswith("Также в: Канал 2, Канал 3")
+    assert {first, *also(w.notifier.edits[0][1])} == {"Канал 1", "Канал 2", "Канал 3"}
     c = w.container()
     st = await c.usage_repo().get(clock.now().date())
     assert (st.read, st.passed_prefilter, st.llm_items, st.findings) == (6, 3, 1, 1)

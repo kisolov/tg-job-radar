@@ -19,7 +19,7 @@ from radar.ingest.ports import (
 )
 from radar.ingest.usecases import PollChannels, ReceiveMessage, RunJoinQueue, RunResolveQueue
 from radar.shared.clock import Clock
-from radar.sources.entities import SourceKind, SourceStatus
+from radar.sources.entities import SourceStatus
 from radar.sources.ports import SourceRepository
 from radar.sources.usecases import AssignWork, ReleaseAccountSources
 
@@ -91,7 +91,7 @@ class AccountWorker:
             except TgSourceGone:
                 pass  # нас уже нет в чате
             await self._sources.release(s.id)
-        joined = [s for s in await self._sources.list_assigned(self.account_id, SourceKind.group)
+        joined = [s for s in await self._sources.list_members(self.account_id)
                   if s.joined and s.status is SourceStatus.active]
         self.gateway.watch(joined)
 

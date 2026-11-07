@@ -55,6 +55,10 @@ class TgUnauthorized(TgError):
     pass
 
 
+class TgPeerStale(TgError):
+    """access_hash не подходит этому аккаунту (ChannelInvalid): чат жив, нужен повторный резолв."""
+
+
 class TgSourceGone(TgError):
     """Чат приватный / удалён / username свободен / нас забанили в чате."""
 

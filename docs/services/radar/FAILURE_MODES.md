@@ -32,7 +32,8 @@
 | `FloodWaitError`, `FloodPremiumWaitError` | `TgFlood(s)` | вступление/резолв: `apply_flood` (пауза s, ×1.5 интервал, −5 лимит; > 1 ч → `flood_wait` + алерт); опрос: пауза опроса аккаунта на s |
 | `UserDeactivatedBanError`, `PhoneNumberBannedError` | `TgBanned` | `banned`, алерт, все источники аккаунта освобождаются, корутина аккаунта завершается; остальные работают |
 | `UserDeactivatedError`, `AuthKey*`, `SessionRevoked/Expired` | `TgUnauthorized` | `unauthorized`, то же |
-| `ChannelPrivate/Invalid`, `UsernameInvalid/NotOccupied`, `UserBannedInChannel`, `InviteHashExpired/Invalid`, `ChannelBanned`, `ChatForbidden` | `TgSourceGone` | источник `dead`, закрепление снимается, счётчик членств −1 |
+| `ChannelInvalidError` | `TgPeerStale` | хэш чужого аккаунта: `requeue` — закрепление снято, хэш стёрт, повторный резолв (не `dead`) |
+| `ChannelPrivate`, `UsernameInvalid/NotOccupied`, `UserBannedInChannel`, `InviteHashExpired/Invalid`, `ChannelBanned`, `ChatForbidden` | `TgSourceGone` | источник `dead`, закрепление снимается, счётчик членств −1 |
 | `InviteRequestSentError` | `TgJoinRequested` | источник `rejected`, закрепление снимается |
 | `ChannelsTooMuchError` | `TgChannelsTooMuch` | `membership_count = cap`, пауза вступлений 1 ч |
 | прочие (сеть и т.п.) | — | шаг логируется, корутина живёт; переподключение — Telethon |

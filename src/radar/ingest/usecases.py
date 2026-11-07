@@ -15,10 +15,11 @@ from radar.ingest.ports import (
     TgChannelsTooMuch,
     TgFlood,
     TgJoinRequested,
+    TgPeerStale,
     TgSourceGone,
 )
 from radar.shared.clock import Clock
-from radar.sources.entities import SourceKind, SourceStatus
+from radar.sources.entities import SourceStatus
 from radar.sources.ports import SourceRepository
 from radar.sources.service import AddResult, SourceService
 
@@ -64,6 +65,9 @@ class PollChannels:
                 await self._sources.release(source.id)
                 await self._sources.mark(source.id, SourceStatus.dead)
                 continue
+            except TgPeerStale:
+                await self._sources.requeue(source.id)  # хэш не этого аккаунта (C2): перерезолвить
+                continue
             if first:
                 # Первый опрос не тащит в отбор старую историю: только последние сутки, остальное — курсор.
                 fresh = [m for m in msgs if m.date >= now - FIRST_POLL_MAX_AGE]
@@ -88,7 +92,7 @@ class RunJoinQueue:
         account = await self._accounts.get(account_id)
         if account is None or not account.can_join(self._clock.now(), self._cap):
             return False
-        pending = [s for s in await self._sources.list_assigned(account_id, SourceKind.group)
+        pending = [s for s in await self._sources.list_members(account_id)
                    if not s.joined and s.status is SourceStatus.active]
         if not pending:
             return False
@@ -97,6 +101,9 @@ class RunJoinQueue:
             peer = await gateway.join(source)
         except TgFlood as e:
             await self._svc.apply_flood(account_id, "join", e.seconds)
+            return True
+        except TgPeerStale:
+            await self._sources.requeue(source.id)
             return True
         except TgChannelsTooMuch:
             await self._sources.release(source.id)
@@ -110,7 +117,7 @@ class RunJoinQueue:
             await self._svc.record_action(account_id, "join")
             return True
         await self._svc.record_action(account_id, "join")
-        if source.peer_id is None and not await self._sources.set_peer(source.id, peer.peer_id, peer.access_hash):
+        if not await self._sources.set_peer(source.id, peer.peer_id, peer.access_hash, account_id):
             # инвайт привёл в уже известный чат (R7): выйти, освободить слот
             await self._sources.release(source.id)
             await gateway.leave(source)
@@ -192,7 +199,8 @@ class RunResolveQueue:
             await self._sources.mark(source.id, SourceStatus.rejected)  # человек или бот, не чат
             return True
         if not await self._sources.set_resolved(source.id, resolved.peer_id, resolved.access_hash,
-                                                resolved.kind, resolved.title, at=self._clock.now()):
+                                                resolved.kind, resolved.title, at=self._clock.now(),
+                                                account_id=account_id):
             return True  # дубль уже известного чата (R7)
         if source.added_by == "discovery" and self._source_service is not None:
             await self._vet(source.id, resolved, gateway)

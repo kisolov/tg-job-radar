@@ -36,6 +36,7 @@ sources = sa.Table(
     sa.Column("title", sa.Text),
     sa.Column("status", sa.Text, nullable=False),
     sa.Column("assigned_account_id", UUID(as_uuid=True), sa.ForeignKey("accounts.id", ondelete="SET NULL")),
+    sa.Column("hash_account_id", UUID(as_uuid=True), sa.ForeignKey("accounts.id", ondelete="SET NULL")),
     sa.Column("joined", sa.Boolean, nullable=False, server_default=sa.false()),
     sa.Column("last_message_id", sa.BigInteger, nullable=False, server_default="0"),
     sa.Column("last_polled_at", TS),

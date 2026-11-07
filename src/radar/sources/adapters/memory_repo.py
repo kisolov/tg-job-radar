@@ -68,25 +68,33 @@ class InMemorySourceRepository:
         s.status = SourceStatus.rejected
         s.version += 1
 
-    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None) -> bool:
+    async def set_resolved(self, source_id, peer_id, access_hash, kind, title, at=None, account_id=None) -> bool:
         s = self.rows[source_id]
         if self._peer_taken(source_id, peer_id):
             self._reject(s)
             return False
         s.peer_id, s.access_hash, s.kind, s.title = peer_id, access_hash, kind, title
+        s.hash_account_id = account_id if access_hash is not None else None
         s.status = SourceStatus.active
         s.activated_at = at
         s.version += 1
         return True
 
-    async def set_peer(self, source_id: int, peer_id: int, access_hash: int) -> bool:
+    async def set_peer(self, source_id: int, peer_id: int, access_hash: int, account_id=None) -> bool:
         s = self.rows[source_id]
         if self._peer_taken(source_id, peer_id):
             self._reject(s)
             return False
-        s.peer_id, s.access_hash = peer_id, access_hash
+        s.peer_id, s.access_hash, s.hash_account_id = peer_id, access_hash, account_id
         s.version += 1
         return True
+
+    async def requeue(self, source_id: int) -> None:
+        await self.release(source_id)
+        s = self.rows[source_id]
+        s.access_hash, s.hash_account_id, s.joined = None, None, False
+        s.status = SourceStatus.candidate
+        s.version += 1
 
     async def set_polled(self, source_id: int, at) -> None:
         self.rows[source_id].last_polled_at = at
@@ -95,7 +103,7 @@ class InMemorySourceRepository:
         due = [
             s for s in self.rows.values()
             if s.assigned_account_id == account_id and s.status is SourceStatus.active
-            and (s.kind is SourceKind.channel or s.joined)
+            and s.peer_id is not None and (not s.needs_membership or s.joined)
             and (s.last_polled_at is None or s.last_polled_at <= before)
         ]
         due.sort(key=lambda s: (s.last_polled_at is not None, s.last_polled_at or 0, s.id))
@@ -110,7 +118,7 @@ class InMemorySourceRepository:
         s = self.rows[source_id]
         if s.assigned_account_id is not None:
             return False
-        if s.kind is SourceKind.group:
+        if s.needs_membership:
             acc = self._accounts.rows[account_id]
             if acc.membership_count >= self._cap:
                 return False
@@ -121,7 +129,7 @@ class InMemorySourceRepository:
         return True
 
     def _unassign(self, s: Source) -> bool:
-        was_group = s.assigned_account_id is not None and s.kind is SourceKind.group
+        was_group = s.assigned_account_id is not None and s.needs_membership
         s.assigned_account_id, s.joined = None, False
         s.version += 1
         return was_group
@@ -149,15 +157,19 @@ class InMemorySourceRepository:
     async def list_assigned(self, account_id: UUID, kind: SourceKind) -> list[Source]:
         return deepcopy([s for s in self.rows.values() if s.assigned_account_id == account_id and s.kind is kind])
 
-    async def list_unassigned(self, kind: SourceKind, limit: int) -> list[Source]:
-        free = [s for s in self.rows.values()
-                if s.status is SourceStatus.active and s.kind is kind and s.assigned_account_id is None]
+    async def list_members(self, account_id: UUID) -> list[Source]:
+        return deepcopy(sorted((s for s in self.rows.values()
+                                if s.assigned_account_id == account_id and s.needs_membership), key=lambda s: s.id))
+
+    async def list_unassigned(self, membership: bool, limit: int) -> list[Source]:
+        free = [s for s in self.rows.values() if s.status is SourceStatus.active
+                and s.needs_membership == membership and s.assigned_account_id is None]
         free.sort(key=lambda s: (-s.priority, s.id))
         return deepcopy(free[:limit])
 
-    async def assigned_counts(self, kind: SourceKind) -> dict[UUID, int]:
+    async def assigned_counts(self, membership: bool) -> dict[UUID, int]:
         return dict(Counter(s.assigned_account_id for s in self.rows.values()
-                            if s.kind is kind and s.assigned_account_id is not None))
+                            if s.needs_membership == membership and s.assigned_account_id is not None))
 
     async def bump_counts(self, source_id: int, read: int, passed: int) -> None:
         if s := self.rows.get(source_id):

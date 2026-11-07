@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from radar.accounts.entities import Account
-from radar.ingest.ports import IncomingMessage, MessageCallback, Peer, Resolved
+from radar.ingest.ports import IncomingMessage, MessageCallback, Peer, Resolved, TgPeerStale
 from radar.sources.entities import Source, SourceKind
 
 
@@ -19,6 +19,12 @@ class FakeTelegram:
     resolves: list[tuple[str, str]] = field(default_factory=list)
     gateways: list["FakeGateway"] = field(default_factory=list)
     next_peer: int = 10_000
+    invite_peers: dict[str, int] = field(default_factory=dict)  # инвайт → чат, в который он ведёт
+
+    @staticmethod
+    def hash_for(peer_id: int, account: Account) -> int:
+        """Как в Telegram: access_hash выдаётся паре (чат, аккаунт); чужой хэш не принимается (C2)."""
+        return (peer_id * 7919 + sum(map(ord, account.phone))) % 1_000_003 + 1
 
     def factory(self, account: Account) -> "FakeGateway":
         gw = FakeGateway(self, account)
@@ -74,8 +80,13 @@ class FakeGateway:
     def watch(self, sources: list[Source]) -> None:
         self.watched = {s.id for s in sources}
 
+    def _check_hash(self, source: Source) -> None:
+        if source.peer_id is not None and source.access_hash != self.world.hash_for(source.peer_id, self.account):
+            raise TgPeerStale("ChannelInvalidError")
+
     async def fetch_new(self, source: Source, min_id: int, limit: int = 100) -> list[IncomingMessage]:
         self._check("fetch", source.id)
+        self._check_hash(source)
         self.world.fetches.append((self.account.phone, source.id, min_id))
         msgs = sorted((m for m in self.world.history.get(source.id, []) if m.message_id > min_id),
                       key=lambda m: m.message_id)
@@ -84,18 +95,26 @@ class FakeGateway:
     async def resolve(self, ref: str) -> Resolved:
         self._check("resolve", ref)
         self.world.resolves.append((self.account.phone, ref))
-        return self.world.chats[ref]
+        r = self.world.chats[ref]
+        if r.peer_id is None:
+            return r
+        return Resolved(r.peer_id, self.world.hash_for(r.peer_id, self.account), r.kind, r.title, r.about)
 
     async def join(self, source: Source) -> Peer:
         self._check("join", source.ref)
         self.world.joins.append((self.account.phone, source.ref))
-        if source.peer_id is not None:
-            return Peer(source.peer_id, source.access_hash or 0)
-        self.world.next_peer += 1
-        return Peer(self.world.next_peer, 1)
+        if source.invite_hash:  # по инвайту — всегда импорт приглашения: хэш выдаётся вступившему
+            peer = source.peer_id or self.world.invite_peers.get(source.invite_hash)
+            if peer is None:
+                self.world.next_peer += 1
+                peer = self.world.invite_peers.setdefault(source.invite_hash, self.world.next_peer)
+            return Peer(peer, self.world.hash_for(peer, self.account))
+        self._check_hash(source)
+        return Peer(source.peer_id, source.access_hash)
 
     async def leave(self, source: Source) -> None:
         self._check("leave", source.ref)
+        self._check_hash(source)
         self.left.append(source.ref)
 
     async def recent(self, source: Source, limit: int = 30) -> list[IncomingMessage]:
