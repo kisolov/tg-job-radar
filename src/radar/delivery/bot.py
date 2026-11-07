@@ -72,9 +72,13 @@ def build_router(owner_id: int, deps: BotDeps) -> Router:
         await state.clear()
         await m.answer("Отменено.")
 
-    @router.message(ReqEdit.waiting_text, F.text)
+    @router.message(ReqEdit.waiting_text, F.text, ~F.text.startswith("/"))  # M5: команды — не текст
     async def _req_text(m: Message, state: FSMContext) -> None:
-        version = await set_req.execute(m.text)
+        try:
+            version = await set_req.execute(m.text)
+        except ValueError:
+            await m.answer("Пустой текст. Пришлите требования одним сообщением или /cancel.")
+            return
         await state.clear()
         await m.answer(f"Требования обновлены, версия {version}. Новые пакеты LLM идут с ней.")
 

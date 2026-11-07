@@ -38,3 +38,30 @@ async def test_every_survives_errors():
     with pytest.raises(asyncio.CancelledError):
         await every(30, fn, sleep=fake_sleep)
     assert len(calls) == 3
+
+
+async def test_supervise_resets_backoff_after_long_healthy_run():
+    """M7: задача проработала дольше BACKOFF_MAX_S — следующая пауза снова короткая."""
+    import pytest
+
+    from radar.bootstrap.main import BACKOFF_MAX_S, BACKOFF_START_S, supervise
+
+    now = [0.0]
+    runs = []
+    sleeps = []
+
+    async def factory():
+        runs.append(now[0])
+        if len(runs) == 4:
+            now[0] += BACKOFF_MAX_S + 1  # долгая нормальная работа перед падением
+        raise RuntimeError("boom")
+
+    async def sleep(s):
+        sleeps.append(s)
+        if len(sleeps) == 5:
+            raise asyncio.CancelledError
+
+    with pytest.raises(asyncio.CancelledError):
+        await supervise("t", factory, sleep=sleep, monotonic=lambda: now[0])
+    assert sleeps == [BACKOFF_START_S, BACKOFF_START_S * 2, BACKOFF_START_S * 4, BACKOFF_START_S,
+                      BACKOFF_START_S * 2]

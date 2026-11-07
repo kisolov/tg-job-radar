@@ -122,3 +122,18 @@ async def test_web_when_panel_disabled(env):
     env.dp.sub_routers.clear()
     env.dp.include_router(build_router(OWNER, env.deps))
     assert "выключена" in await env.say("/web")
+
+
+async def test_setreq_does_not_swallow_commands(env):
+    """M5: команда в режиме ожидания текста — это команда, а не новые требования."""
+    await env.say("/setreq")
+    reply = await env.say("/status")
+    assert "Статус" in reply
+    assert (await env.deps.requirements.current())[0] == 1
+    assert "версия 2" in await env.say("Только Django")
+
+
+async def test_setreq_blank_text_is_refused(env):
+    await env.say("/setreq")
+    reply = await env.say("   ")
+    assert "Пустой" in reply and (await env.deps.requirements.current())[0] == 1

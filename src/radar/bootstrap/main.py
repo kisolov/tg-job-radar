@@ -1,6 +1,7 @@
 """Процесс radar: миграции → пул аккаунтов, отбор, доставка, бот. Падение одной задачи её перезапускает."""
 import asyncio
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
 
@@ -19,10 +20,13 @@ BACKOFF_MAX_S = 300
 DELIVER_FALLBACK_S = 30
 
 
-async def supervise(name: str, factory: Callable[[], Awaitable[None]], sleep: Sleep = asyncio.sleep) -> None:
-    """Перезапускать задачу при падении или выходе, с растущей паузой. Отмена — не перезапускается."""
+async def supervise(name: str, factory: Callable[[], Awaitable[None]], sleep: Sleep = asyncio.sleep,
+                    monotonic: Callable[[], float] = time.monotonic) -> None:
+    """Перезапускать задачу при падении или выходе, с растущей паузой. Отмена — не перезапускается.
+    Проработала дольше BACKOFF_MAX_S — пауза снова с начала (M7)."""
     delay = BACKOFF_START_S
     while True:
+        started = monotonic()
         try:
             await factory()
             logger.warning("Задача %s завершилась, перезапуск", name)
@@ -30,6 +34,8 @@ async def supervise(name: str, factory: Callable[[], Awaitable[None]], sleep: Sl
             raise
         except Exception:
             logger.exception("Задача %s упала, перезапуск через %s с", name, delay)
+        if monotonic() - started > BACKOFF_MAX_S:
+            delay = BACKOFF_START_S
         await sleep(delay)
         delay = min(delay * 2, BACKOFF_MAX_S)
 
