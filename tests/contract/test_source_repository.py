@@ -256,3 +256,16 @@ async def test_invite_channel_needs_membership_and_is_polled_only_when_joined(so
     assert (await source_repo.get(s.id)).hash_account_id == a.id
     await source_repo.release(s.id)
     assert (await account_repo_shared.get(a.id)).membership_count == 0
+
+
+async def test_external_memberships_count_toward_the_cap(source_repo, account_repo_shared):
+    """M4: чаты вне учёта занимают лимит при закреплении; поле переживает сохранение аккаунта."""
+    from tests.contract.conftest import CAP
+
+    a = make_account(external_memberships=CAP - 1)
+    await account_repo_shared.add(a)
+    assert (await account_repo_shared.get(a.id)).external_memberships == CAP - 1
+    g1 = await _group(source_repo, "grp_one", 1)
+    g2 = await _group(source_repo, "grp_two", 2)
+    assert await source_repo.assign(g1.id, a.id)
+    assert not await source_repo.assign(g2.id, a.id)

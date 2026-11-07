@@ -36,7 +36,7 @@ def _values(a: Account) -> dict[str, Any]:
     return dict(
         phone=a.phone, api_id=a.api_id, api_hash_enc=a.api_hash_enc, session_enc=a.session_enc,
         device_profile=a.device_profile, status=a.status.value, status_until=a.status_until,
-        last_error=a.last_error, membership_count=a.membership_count,
+        last_error=a.last_error, membership_count=a.membership_count, external_memberships=a.external_memberships,
         join_state=pacer_to_json(a.join), resolve_state=pacer_to_json(a.resolve),
     )
 
@@ -48,6 +48,7 @@ def _row(r: sa.Row) -> Account:
         status=AccountStatus(r.status), status_until=r.status_until, last_error=r.last_error,
         membership_count=r.membership_count, join=pacer_from_json(r.join_state),
         resolve=pacer_from_json(r.resolve_state), version=r.version, created_at=r.created_at,
+        external_memberships=r.external_memberships,
     )
 
 

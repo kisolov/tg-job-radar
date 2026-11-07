@@ -129,10 +129,15 @@ class RunJoinQueue:
             await self._svc.apply_flood(account_id, "join", CHANNELS_TOO_MUCH_PAUSE_S)
             await self._svc.mark_membership_full(account_id, self._cap)
             return True
-        except (TgSourceGone, TgJoinRequested) as e:
+        except TgSourceGone:
             await self._sources.release(source.id)
-            status = SourceStatus.dead if isinstance(e, TgSourceGone) else SourceStatus.rejected
-            await self._sources.mark(source.id, status)
+            await self._sources.mark(source.id, SourceStatus.dead)
+            await self._svc.record_action(account_id, "join")
+            return True
+        except TgJoinRequested:
+            # M3: заявка у админа; одобрят — аккаунт окажется в чате. Слот и закрепление держим (R4 не разойдётся),
+            # читать не будем: rejected.
+            await self._sources.mark(source.id, SourceStatus.rejected)
             await self._svc.record_action(account_id, "join")
             return True
         await self._svc.record_action(account_id, "join")

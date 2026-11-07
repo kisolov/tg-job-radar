@@ -106,10 +106,11 @@ class AccountService:
         return woken
 
     async def mark_membership_full(self, account_id: UUID, cap: int) -> Account | None:
-        """Telegram ответил ChannelsTooMuch: считать аккаунт заполненным, новые группы ему не давать (R4)."""
+        """Telegram ответил ChannelsTooMuch: недостающее до лимита — чаты вне нашего учёта (M4). Наш счётчик
+        не трогаем, поэтому освобождение слотов потом не уводит его ниже реального."""
 
         def change(a: Account) -> None:
-            a.membership_count = max(a.membership_count, cap)
+            a.external_memberships = max(a.external_memberships, cap - a.membership_count)
 
         return await self._mutate(account_id, change)
 

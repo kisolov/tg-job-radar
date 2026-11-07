@@ -93,7 +93,7 @@ class SourceService:
         all_full = False
         for membership in (True, False):
             if membership:
-                load = {a.id: a.membership_count for a in accounts if a.id in active}
+                load = {a.id: a.membership_count + a.external_memberships for a in accounts if a.id in active}
             else:
                 counts = await self._sources.assigned_counts(False)
                 load = {a: counts.get(a, 0) for a in active}

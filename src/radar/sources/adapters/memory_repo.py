@@ -120,7 +120,7 @@ class InMemorySourceRepository:
             return False
         if s.needs_membership:
             acc = self._accounts.rows[account_id]
-            if acc.membership_count >= self._cap:
+            if acc.membership_count + acc.external_memberships >= self._cap:
                 return False
             acc.membership_count += 1
             acc.version += 1

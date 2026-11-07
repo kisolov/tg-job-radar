@@ -152,7 +152,8 @@ class SqlAlchemySourceRepository:
                 if kind:
                     res = await s.execute(
                         at.update()
-                        .where(at.c.id == account_id, at.c.membership_count < self._cap)
+                        .where(at.c.id == account_id,
+                               at.c.membership_count + at.c.external_memberships < self._cap)
                         .values(membership_count=at.c.membership_count + 1, version=at.c.version + 1)
                     )
                     if res.rowcount != 1:

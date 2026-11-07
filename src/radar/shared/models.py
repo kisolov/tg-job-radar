@@ -18,6 +18,7 @@ accounts = sa.Table(
     sa.Column("status_until", TS),
     sa.Column("last_error", sa.Text),
     sa.Column("membership_count", sa.Integer, nullable=False, server_default="0"),
+    sa.Column("external_memberships", sa.Integer, nullable=False, server_default="0"),
     sa.Column("join_state", JSONB, nullable=False),
     sa.Column("resolve_state", JSONB, nullable=False),
     sa.Column("version", sa.Integer, nullable=False, server_default="0"),

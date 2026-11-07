@@ -140,10 +140,12 @@ class Account:
     join: Pacer
     resolve: Pacer
     version: int = 0
+    external_memberships: int = 0  # чаты вне учёта (узнали по ChannelsTooMuch), занимают лимит (M4)
     created_at: datetime | None = field(default=None, compare=False)
 
     def can_join(self, now: datetime, cap: int) -> bool:
-        return self.status is AccountStatus.active and self.membership_count < cap and self.join.can_act(now)
+        return (self.status is AccountStatus.active and self.membership_count + self.external_memberships < cap
+                and self.join.can_act(now))
 
     def can_resolve(self, now: datetime) -> bool:
         return self.status is AccountStatus.active and self.resolve.can_act(now)
