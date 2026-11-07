@@ -54,7 +54,7 @@ class PacingPolicy:
     @classmethod
     def resolve_from_settings(cls, s) -> PacingPolicy:
         return cls(
-            daily_min=s.JOIN_DAILY_MIN, daily_max=s.JOIN_DAILY_MAX,
+            daily_min=s.RESOLVE_DAILY_MIN, daily_max=s.RESOLVE_DAILY_MAX,
             interval_min_s=s.RESOLVE_INTERVAL_S, interval_max_s=s.RESOLVE_INTERVAL_S,
             factor=s.THROTTLE_FACTOR, max_factor=s.THROTTLE_MAX_FACTOR,
             limit_step=s.THROTTLE_LIMIT_STEP, limit_floor=s.THROTTLE_LIMIT_FLOOR,

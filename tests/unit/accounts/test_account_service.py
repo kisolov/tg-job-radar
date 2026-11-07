@@ -39,9 +39,13 @@ async def test_flood_over_hour_alerts(clock):
     assert got.status is AccountStatus.active and got.join.interval_factor == 1.5
     await svc.apply_flood(a.id, "resolve", 7200)
     got = await repo.get(a.id)
-    assert got.status is AccountStatus.flood_wait
-    assert got.status_until == clock.now() + timedelta(seconds=7200)
+    # I1: долгий flood на резолве тормозит только резолв — аккаунт продолжает читать
+    assert got.status is AccountStatus.active and got.status_until is None
+    assert got.resolve.next_allowed_at == clock.now() + timedelta(seconds=7200)
     assert got.resolve.interval_factor == 1.5 and len(alerts.sent) == 1
+    assert "резолв" in alerts.sent[0] and got.last_error.startswith("FloodWait 7200")
+    await svc.apply_flood(a.id, "join", 7200)
+    assert (await repo.get(a.id)).status is AccountStatus.flood_wait  # вступления — как в спеке
 
 
 async def test_flood_wait_expires(clock):

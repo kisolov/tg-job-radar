@@ -115,3 +115,9 @@ def test_secret_box_roundtrip_and_wrong_key():
 
 def test_default_device_profile_passes_no_fields():
     assert DefaultDeviceProfileProvider().get("default").as_client_kwargs() == {}
+
+
+async def test_imported_account_has_daily_resolve_limit(clock):
+    """I1: ResolveUsername у Telegram лимитирован в сутки — резолв не безлимитный."""
+    acc = await make_import(InMemoryAccountRepository(), FakeProbe(), clock).execute(payload())
+    assert not acc.resolve.unlimited and acc.resolve.daily_limit >= RESOLVE_POLICY.daily_min

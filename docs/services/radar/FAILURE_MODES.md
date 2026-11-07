@@ -29,7 +29,7 @@
 
 | Ошибка Telethon | Порт | Реакция |
 |---|---|---|
-| `FloodWaitError`, `FloodPremiumWaitError` | `TgFlood(s)` | вступление/резолв: `apply_flood` (пауза s, ×1.5 интервал, −5 лимит; > 1 ч → `flood_wait` + алерт); опрос: пауза опроса аккаунта на s |
+| `FloodWaitError`, `FloodPremiumWaitError` | `TgFlood(s)` | вступление/резолв: `apply_flood` (пауза s, ×1.5 интервал, −5 лимит); > 1 ч на вступлении → `flood_wait` + алерт, на резолве/опросе → только пауза резолва + алерт, чтение идёт (I1); опрос: пауза опроса аккаунта на s |
 | `UserDeactivatedBanError`, `PhoneNumberBannedError` | `TgBanned` | `banned`, алерт, все источники аккаунта освобождаются, корутина аккаунта завершается; остальные работают |
 | `UserDeactivatedError`, `AuthKey*`, `SessionRevoked/Expired` | `TgUnauthorized` | `unauthorized`, то же |
 | `ChannelInvalidError` | `TgPeerStale` | хэш чужого аккаунта: `requeue` — закрепление снято, хэш стёрт, повторный резолв (не `dead`) |

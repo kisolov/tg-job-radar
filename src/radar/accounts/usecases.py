@@ -71,7 +71,7 @@ class ImportAccount:
                 session_enc=self._box.encrypt(session), device_profile=self._profile,
                 status=status, status_until=None, last_error=error, membership_count=0,
                 join=Pacer.new(now, self._rng, self._join_policy),
-                resolve=Pacer.new(now, self._rng, self._resolve_policy, unlimited=True),
+                resolve=Pacer.new(now, self._rng, self._resolve_policy),
             )
             await self._accounts.add(account)
         logger.info("Аккаунт импортирован: %s → %s", phone, status.value)

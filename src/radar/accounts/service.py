@@ -71,6 +71,10 @@ class AccountService:
             self._pacer(a, action).record_flood(now, seconds, policy)
             if seconds <= LONG_FLOOD_S or a.status is not AccountStatus.active:
                 return None
+            if action == "resolve":  # I1: резолв тормозит только свой пейсер, чтение аккаунта продолжается
+                a.last_error = f"FloodWait {int(seconds)} с на резолве"
+                until = now + timedelta(seconds=seconds)
+                return f"⚠️ Аккаунт {a.phone}: FloodWait {int(seconds) // 60} мин на резолве, резолв на паузе до {until:%H:%M} UTC; чтение идёт"
             a.status = AccountStatus.flood_wait
             a.status_until = now + timedelta(seconds=seconds)
             a.last_error = f"FloodWait {int(seconds)} с на {action}"

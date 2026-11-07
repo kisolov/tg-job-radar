@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     JOIN_INTERVAL_MIN_S: int = 300
     JOIN_INTERVAL_MAX_S: int = 600
     RESOLVE_INTERVAL_S: int = 60
+    RESOLVE_DAILY_MIN: int = 150  # ResolveUsername у Telegram лимитирован (~200 в сутки)
+    RESOLVE_DAILY_MAX: int = 180
     THROTTLE_FACTOR: float = 1.5
     THROTTLE_MAX_FACTOR: float = 8.0
     THROTTLE_LIMIT_STEP: int = 5

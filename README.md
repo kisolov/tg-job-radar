@@ -39,6 +39,7 @@ docker compose exec app radar sources import seeds/sources.txt
 | `THROTTLE_FACTOR` / `THROTTLE_MAX_FACTOR` | 1.5 / 8.0 | FloodWait умножает интервал, но не выше |
 | `THROTTLE_LIMIT_STEP` / `THROTTLE_LIMIT_FLOOR` | 5 / 5 | FloodWait снижает суточный лимит на шаг, не ниже |
 | `THROTTLE_RECOVERY_DAYS` | 3 | суток без флуда до начала восстановления темпа |
+| `RESOLVE_DAILY_MIN` / `RESOLVE_DAILY_MAX` | 150 / 180 | резолвов username в сутки на аккаунт (лимит Telegram ~200) |
 | `MEMBERSHIP_CAP` | 500 | групп на аккаунт (1000 с Premium) |
 | `CHANNEL_POLL_INTERVAL_S` | 300 | как часто опрашивать канал |
 | `LLM_BATCH_SIZE` / `LLM_BATCH_WAIT_S` | 10 / 60 | размер пакета и максимальное ожидание его набора |
