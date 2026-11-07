@@ -55,7 +55,7 @@ RedeliverStale (раз в минуту): delivering старше CLAIM_STALE_S �
 
 ## Процесс (`bootstrap/main.py`)
 
-`alembic upgrade head` → `RuntimeConfig.load` → `reset_resolving` → задачи под `supervise` (падение/выход →
+`alembic upgrade head` → `RuntimeConfig.load` → `reset_resolving` → `purge_unprocessed` (I5) → `reset_reserved` (M8) → задачи под `supervise` (падение/выход →
 перезапуск с паузой 5 → 10 → … ≤ 300 с): `pool`, `classify`, `deliver`, `copy-edit`, `redeliver-stale`,
 `purge-messages`, `bot` (aiogram polling), `web` (панель на `WEB_HOST:WEB_PORT`, если `WEB_PORT` ≠ 0).
 

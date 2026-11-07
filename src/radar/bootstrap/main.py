@@ -106,6 +106,7 @@ async def run(c: Container) -> None:
     await c.runtime().load()
     await c.source_repo().reset_resolving()
     await c.message_log().purge_unprocessed()  # I5: перечитать то, что упало посередине
+    await c.usage_repo().reset_reserved()  # M8: резервы пакетов, умерших с прошлым процессом
 
     dp = Dispatcher()
     dp.include_router(build_router(s.OWNER_TELEGRAM_ID, c.bot_deps()))

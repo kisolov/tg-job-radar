@@ -18,6 +18,10 @@ class SqlAlchemyUsageRepository:
     async def _ensure_day(s, day: date) -> None:
         await s.execute(insert(ds).values(day=day).on_conflict_do_nothing())
 
+    async def reset_reserved(self) -> int:
+        async with transaction(self._sf) as s:
+            return (await s.execute(ds.update().where(ds.c.reserved > 0).values(reserved=0))).rowcount
+
     async def reserve(self, day: date, estimated_tokens: int, limit: int) -> bool:
         async with transaction(self._sf) as s:
             await self._ensure_day(s, day)

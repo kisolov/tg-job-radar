@@ -72,3 +72,13 @@ async def test_requirements_versioned(req_repo):
     assert v == 1 and text == DEFAULT_REQUIREMENTS
     assert await req_repo.set("Новые требования") == 2
     assert await req_repo.current() == (2, "Новые требования")
+
+
+async def test_reset_reserved_frees_budget_left_by_a_crash(usage_repo):
+    """M8: резерв пакета, который был в полёте при падении процесса, на старте снимается."""
+    d = date(2026, 11, 4)
+    assert await usage_repo.reserve(d, 900, 1000)
+    assert not await usage_repo.reserve(d, 200, 1000)
+    assert await usage_repo.reset_reserved() == 1
+    assert (await usage_repo.get(d)).reserved == 0
+    assert await usage_repo.reserve(d, 200, 1000)

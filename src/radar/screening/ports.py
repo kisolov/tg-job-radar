@@ -53,6 +53,9 @@ class UsageRepository(Protocol):
     async def reserve(self, day: date, estimated_tokens: int, limit: int) -> bool:
         """Атомарно: факт + резерв + оценка ≤ limit → резерв растёт, True (R8)."""
 
+    async def reset_reserved(self) -> int:
+        """На старте процесса: снять все резервы (пакеты в полёте умерли вместе с процессом, M8). → сколько дней."""
+
     async def commit_usage(self, day: date, reserved: int, usage: Usage) -> None:
         """Снять резерв, прибавить фактический расход и +1 запрос."""
 

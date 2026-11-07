@@ -19,6 +19,12 @@ class InMemoryUsageRepository:
         r.reserved += estimated_tokens
         return True
 
+    async def reset_reserved(self) -> int:
+        held = [r for r in self.days.values() if r.reserved]
+        for r in held:
+            r.reserved = 0
+        return len(held)
+
     async def commit_usage(self, day: date, reserved: int, usage: Usage) -> None:
         r = self._row(day)
         r.reserved = max(0, r.reserved - reserved)
