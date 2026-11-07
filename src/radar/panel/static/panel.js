@@ -217,7 +217,7 @@ function renderOverview(o) {
 const F_STATUS = {
   delivered: ["Доставлена", "ok"], rejected: ["Отклонена LLM", "off"], pending: ["Ждёт LLM", "warn"],
   accepted: ["В очереди доставки", "info"], delivering: ["В очереди доставки", "info"],
-  failed: ["Ошибка LLM", "bad"],
+  failed: ["Не обработана", "bad"],
 };
 const F_TABS = [["all", "Все"], ["delivered", "Доставлены"], ["queue", "В очереди"], ["pending", "Ждут LLM"], ["rejected", "Отклонены"]];
 let findingsState = { key: "", items: [], page: 1, total: 0 };

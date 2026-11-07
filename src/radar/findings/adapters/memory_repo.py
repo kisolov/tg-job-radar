@@ -90,6 +90,13 @@ class InMemoryFindingRepository:
         f = self.rows[finding_id]
         f.status, f.bot_message_id, f.delivered_at = FindingStatus.delivered, bot_message_id, now
 
+    async def fail_delivery(self, finding_id: int) -> bool:
+        f = self.rows[finding_id]
+        if f.status is not FindingStatus.delivering:
+            return False
+        f.status = FindingStatus.failed
+        return True
+
     async def unclaim(self, finding_id: int) -> None:
         f = self.rows[finding_id]
         if f.status is FindingStatus.delivering:

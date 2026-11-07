@@ -5,6 +5,7 @@ from aiogram.methods import EditMessageText, SendMessage
 
 from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
 from radar.delivery.adapters.fake_notifier import FakeNotifier
+from radar.delivery.ports import DeliveryRejected
 from radar.delivery.usecases import AttachCopyEdit
 from radar.findings.adapters.memory_repo import InMemoryFindingRepository
 from radar.findings.entities import Classification
@@ -58,3 +59,17 @@ async def test_attach_copy_edit_updates_delivered_card():
     assert await edit.execute(CopyAttached(f.id))
     assert await edit.execute(CopyAttached(f.id))  # повтор — та же правка, идемпотентно
     assert notifier.edits == [(42, "2 копий"), (42, "2 копий")]
+
+
+async def test_bad_request_on_send_is_rejection():
+    """I6: отказ Telegram (BadRequest) — постоянный, отличается от сетевого сбоя."""
+    import pytest
+
+    bot, session = make_bot()
+
+    async def boom(bot_, method, timeout=None):
+        raise TelegramBadRequest(method, "Bad Request: can't parse entities")
+
+    session.make_request = boom
+    with pytest.raises(DeliveryRejected):
+        await AiogramNotifier(bot, OWNER).send("<b>x")

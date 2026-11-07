@@ -117,6 +117,9 @@ class SqlAlchemyFindingRepository:
         await self._update(finding_id, FindingStatus.delivering, status=FindingStatus.delivered.value,
                            bot_message_id=bot_message_id, delivered_at=now)
 
+    async def fail_delivery(self, finding_id: int) -> bool:
+        return await self._update(finding_id, FindingStatus.delivering, status=FindingStatus.failed.value)
+
     async def unclaim(self, finding_id: int) -> None:
         await self._update(finding_id, FindingStatus.delivering, status=FindingStatus.accepted.value, claimed_at=None)
 

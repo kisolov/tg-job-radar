@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from radar.delivery.card import TELEGRAM_LIMIT, contact_line, render_card
+from radar.delivery.card import FIELD_MAX, TELEGRAM_LIMIT, contact_line, render_card, to_plain
 from radar.findings.entities import Classification, Copy, Finding, FindingStatus
 
 T0 = datetime(2026, 11, 4, 12, 0, tzinfo=UTC)
@@ -82,3 +82,20 @@ def test_also_in_list_capped():
 def test_also_in_dedups_same_chat():
     card = render_card(finding(), [copy(1, "A"), copy(1, "A"), copy(2, "B")])
     assert card.endswith("Также в: B")
+
+
+def test_long_llm_fields_are_capped_and_card_fits():
+    """I6: длинные money/format/reason/summary от LLM не выталкивают карточку за 4096."""
+    huge = "очень длинно " * 400
+    card = render_card(finding(Classification(True, "vacancy", huge, huge, huge, None, huge)),
+                       [copy(i, "Чат с очень длинным названием " * 5) for i in range(1, 30)])
+    assert len(card) <= TELEGRAM_LIMIT
+    money_line = next(ln for ln in card.split("\n") if ln.startswith("💰"))
+    assert len(money_line) <= FIELD_MAX + 4 and money_line.endswith("…")
+
+
+def test_plain_fallback_keeps_urls_and_drops_tg_links():
+    html = ('💼 <b>Вакансия</b>\nсуть &lt;тег&gt;\n👤 <a href="tg://user?id=5">профиль автора</a>\n'
+            '🔗 <a href="https://t.me/c/1/5">Python Jobs</a>')
+    assert to_plain(html) == ("💼 Вакансия\nсуть <тег>\n👤 профиль автора\n"
+                              "🔗 Python Jobs: https://t.me/c/1/5")

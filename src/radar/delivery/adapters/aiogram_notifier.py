@@ -4,6 +4,8 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import LinkPreviewOptions
 
+from radar.delivery.ports import DeliveryRejected
+
 logger = logging.getLogger(__name__)
 _NO_PREVIEW = LinkPreviewOptions(is_disabled=True)
 
@@ -14,8 +16,12 @@ class AiogramNotifier:
     def __init__(self, bot: Bot, owner_id: int) -> None:
         self._bot, self._owner = bot, owner_id
 
-    async def send(self, text: str, parse_mode: str = "HTML") -> int:
-        msg = await self._bot.send_message(self._owner, text, parse_mode=parse_mode, link_preview_options=_NO_PREVIEW)
+    async def send(self, text: str, parse_mode: str | None = "HTML") -> int:
+        try:
+            msg = await self._bot.send_message(self._owner, text, parse_mode=parse_mode,
+                                               link_preview_options=_NO_PREVIEW)
+        except TelegramBadRequest as exc:
+            raise DeliveryRejected(str(exc)) from exc
         return msg.message_id
 
     async def edit(self, message_id: int, text: str) -> None:

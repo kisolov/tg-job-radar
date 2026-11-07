@@ -14,7 +14,7 @@ from radar.accounts.service import AccountService
 from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts, LoginAccount
 from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
 from radar.delivery.bot import BotDeps
-from radar.delivery.card import render_card
+from radar.delivery.card import render_card, to_plain
 from radar.delivery.usecases import AttachCopyEdit, SetPaused
 from radar.findings.adapters.sqlalchemy_repo import SqlAlchemyFindingRepository
 from radar.findings.events import InProcessEventBus
@@ -153,7 +153,8 @@ class Container(containers.DeclarativeContainer):
     delivery_trigger = providers.Singleton(DeliveryTrigger)
     deliver_accepted = providers.Singleton(
         DeliverAccepted, repo=finding_repo, notifier=notifier, render=providers.Object(render_card),
-        paused=runtime.provided.paused, stats=usage_repo, clock=clock,
+        paused=runtime.provided.paused, stats=usage_repo, clock=clock, plain=providers.Object(to_plain),
+        alerts=notifier,
     )
     redeliver_stale = providers.Singleton(
         RedeliverStale, repo=finding_repo, clock=clock, stale_s=settings.provided.CLAIM_STALE_S)

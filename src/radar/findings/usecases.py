@@ -3,7 +3,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
 
-from radar.delivery.ports import Notifier
+from radar.accounts.ports import AlertSink
+from radar.delivery.ports import DeliveryRejected, Notifier
 from radar.findings.entities import Copy, Finding, FindingStatus
 from radar.findings.events import CopyAttached, EventBus
 from radar.findings.ports import FindingRepository
@@ -52,9 +53,35 @@ class DeliverAccepted:
     """Каждая принятая находка — одна карточка (R1): claim до отправки, при сбое отправки — снять claim."""
 
     def __init__(self, repo: FindingRepository, notifier: Notifier, render: Render,
-                 paused: Callable[[], Awaitable[bool]], stats: UsageRepository, clock: Clock) -> None:
+                 paused: Callable[[], Awaitable[bool]], stats: UsageRepository, clock: Clock,
+                 plain: Callable[[str], str] | None = None, alerts: AlertSink | None = None) -> None:
         self._repo, self._notifier, self._render = repo, notifier, render
         self._paused, self._stats, self._clock = paused, stats, clock
+        self._plain, self._alerts = plain, alerts
+
+    async def _send(self, finding: Finding, html: str) -> int | None:
+        """→ message_id; None — не отправлено (claim уже снят или находка failed)."""
+        try:
+            return await self._notifier.send(html)
+        except DeliveryRejected as exc:
+            logger.warning("Telegram отклонил карточку %s (%s), шлём простым текстом", finding.id, exc)
+        except Exception:
+            logger.exception("Не удалось отправить находку %s, вернём в очередь", finding.id)
+            await self._repo.unclaim(finding.id)
+            return None
+        try:
+            if self._plain is not None:
+                return await self._notifier.send(self._plain(html), parse_mode=None)
+            raise DeliveryRejected("нет запасного вида")
+        except DeliveryRejected as exc:
+            await self._repo.fail_delivery(finding.id)
+            if self._alerts is not None:
+                await self._alerts.notify(f"⚠️ Telegram не принял карточку находки {finding.id} ({exc}); "
+                                          "она отмечена failed и видна в веб-панели.")
+        except Exception:
+            logger.exception("Не удалось отправить находку %s, вернём в очередь", finding.id)
+            await self._repo.unclaim(finding.id)
+        return None
 
     async def execute(self) -> int:
         if await self._paused():
@@ -64,11 +91,8 @@ class DeliverAccepted:
             if not await self._repo.claim(finding.id, self._clock.now()):
                 continue
             copies = await self._repo.copies(finding.id)
-            try:
-                message_id = await self._notifier.send(self._render(finding, copies))
-            except Exception:
-                logger.exception("Не удалось отправить находку %s, вернём в очередь", finding.id)
-                await self._repo.unclaim(finding.id)
+            message_id = await self._send(finding, self._render(finding, copies))
+            if message_id is None:
                 continue
             await self._repo.mark_delivered(finding.id, message_id, self._clock.now())
             await self._stats.bump(self._clock.now().date(), findings=1)

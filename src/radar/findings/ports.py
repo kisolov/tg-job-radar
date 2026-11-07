@@ -29,5 +29,8 @@ class FindingRepository(Protocol):
     async def unclaim(self, finding_id: int) -> None:
         """delivering → accepted."""
 
+    async def fail_delivery(self, finding_id: int) -> bool:
+        """delivering → failed: Telegram не принял карточку ни в каком виде (I6)."""
+
     async def stale_claims(self, claimed_before: datetime) -> list[Finding]: ...
     async def copies(self, finding_id: int) -> list[Copy]: ...

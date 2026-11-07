@@ -120,3 +120,15 @@ async def test_llm_failures_push_back_then_fail(finding_repo):
     assert got.status is FindingStatus.failed and got.llm_attempts == 2
     assert await finding_repo.record_llm_failure([f1.id], 2) == []  # уже не pending
     assert [f.id for f in await finding_repo.pending(10)] == [f2.id]
+
+
+async def test_fail_delivery_only_from_delivering(finding_repo):
+    """I6: failed ставится только выигравшему claim; повтор и чужой статус — без изменений."""
+    f, _ = await cluster(finding_repo, msg(1))
+    await finding_repo.set_classification(f.id, CLS, 1)
+    assert not await finding_repo.fail_delivery(f.id)  # accepted, не delivering
+    assert await finding_repo.claim(f.id, T0)
+    assert await finding_repo.fail_delivery(f.id)
+    assert (await finding_repo.get(f.id)).status is FindingStatus.failed
+    assert not await finding_repo.fail_delivery(f.id)
+    assert await finding_repo.accepted(10) == []

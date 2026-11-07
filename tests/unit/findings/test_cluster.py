@@ -39,7 +39,8 @@ class Env:
         self.paused = Paused()
         self.service = FindingService(self.repo, clock, window_days=7, threshold=0.6)
         self.cluster = ClusterMessage(self.service, lambda: PCFG, self.bus, self.stats, clock)
-        self.deliver = DeliverAccepted(self.repo, self.notifier, render, self.paused, self.stats, clock)
+        self.deliver = DeliverAccepted(self.repo, self.notifier, render, self.paused, self.stats, clock,
+                                       plain=lambda html: html, alerts=self.notifier)
         self.redeliver = RedeliverStale(self.repo, clock, stale_s=600)
 
     def msg(self, source_id, message_id=1, text=TEXT):
@@ -159,3 +160,27 @@ async def test_window_new_cluster_after_8_days(clock):
     clock.advance(timedelta(days=8).total_seconds())
     await env.cluster.submit(env.msg(2))
     assert len(await env.repo.pending(10)) == 2
+
+
+async def test_rejected_card_falls_back_to_plain_text(clock):
+    """I6: Telegram отклонил HTML-карточку → одна попытка простым текстом, без вечного повтора."""
+    env = Env(clock)
+    await env.cluster.submit(env.msg(1))
+    await env.accept_all()
+    env.notifier.reject_next = 1
+    assert await env.deliver.execute() == 1
+    assert env.notifier.modes == ["HTML", None]
+    f = (await env.repo.accepted(10)) or None
+    assert f is None
+
+
+async def test_card_rejected_twice_fails_with_alert(clock):
+    env = Env(clock)
+    await env.cluster.submit(env.msg(1))
+    await env.accept_all()
+    env.notifier.reject_next = 2
+    assert await env.deliver.execute() == 0
+    found = list(env.repo.rows.values())[0]
+    assert found.status is FindingStatus.failed
+    assert any("не принял карточку" in a for a in env.notifier.alerts)
+    assert await env.deliver.execute() == 0 and env.notifier.modes == ["HTML", None]  # не крутится
