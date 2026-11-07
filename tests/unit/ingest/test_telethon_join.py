@@ -54,3 +54,14 @@ async def test_join_maps_stale_hash(err):
 
     with pytest.raises(TgPeerStale):
         await gateway(Failing(None)).join(_src(peer_id=-1000001234567, access_hash=9))
+
+
+async def test_resolve_picks_the_chat_named_by_peer():
+    """M1: в ответе ResolveUsername бывает несколько чатов (например, связанный канал) — берём тот, что в res.peer."""
+    linked = types.Channel(id=111, title="Связанный", photo=types.ChatPhotoEmpty(), date=None, access_hash=1,
+                           broadcast=True)
+    target = types.Channel(id=222, title="Нужный", photo=types.ChatPhotoEmpty(), date=None, access_hash=2,
+                           megagroup=True)
+    res = SimpleNamespace(peer=types.PeerChannel(222), chats=[linked, target], users=[])
+    got = await gateway(StubClient(res)).resolve("needed_chat")
+    assert got.title == "Нужный" and got.access_hash == 2

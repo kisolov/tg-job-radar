@@ -83,7 +83,9 @@ def _mapped(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
 def message_link(source: Source, message_id: int) -> str:
     if source.username:
         return f"https://t.me/{source.username}/{message_id}"
-    real_id, _ = utils.resolve_id(source.peer_id or 0)
+    real_id, cls = utils.resolve_id(source.peer_id or 0)
+    if cls is not types.PeerChannel:
+        return ""  # M2: у обычной группы ссылок на сообщения нет
     return f"https://t.me/c/{real_id}/{message_id}"
 
 
@@ -197,7 +199,8 @@ class TelethonGateway:
         if isinstance(res.peer, types.PeerUser):
             user = res.users[0] if res.users else None
             return Resolved(None, None, None, getattr(user, "first_name", "") or "")
-        chat = res.chats[0]
+        want = utils.get_peer_id(res.peer)  # M1: в ответе бывают и связанные чаты
+        chat = next((c for c in res.chats if utils.get_peer_id(c) == want), res.chats[0])
         return Resolved(utils.get_peer_id(chat), getattr(chat, "access_hash", None) or 0, _kind(chat), chat.title)
 
     @_mapped

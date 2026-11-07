@@ -19,7 +19,8 @@ def contact_line(f: Finding) -> str:
     text = (f.text_snapshot or "").lower()
     llm = (f.classification.contact if f.classification else None) or ""
     for m in (_AT.search(llm), _TME.search(llm)):
-        if m and m.group(1).lower() in text:
+        # M6: username из ответа LLM засчитывается, только если он стоит в тексте целым словом
+        if m and re.search(rf"(?<!\w){re.escape(m.group(1).lower())}(?!\w)", text.replace("@", " ")):
             if m.re is _AT:
                 return f"@{escape(m.group(1))}"
             name = escape(m.group(1))
@@ -78,7 +79,8 @@ def render_card(f: Finding, copies: list[Copy]) -> str:
     if cls and cls.work_format:
         tail.append(f"📍 {escape(_cap(cls.work_format))}")
     tail.append(f"👤 {contact_line(f)}")
-    tail.append(f'🔗 <a href="{escape(link, quote=True)}">{link_title}</a>')
+    # M2: у обычной группы ссылок на сообщения нет — только название
+    tail.append(f'🔗 <a href="{escape(link, quote=True)}">{link_title}</a>' if link else f"🔗 {link_title}")
     if cls and cls.reason:
         tail.append(f"✅ {escape(_cap(cls.reason))}")
     if also := _also_in(copies):

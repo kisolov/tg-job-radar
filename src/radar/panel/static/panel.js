@@ -318,13 +318,13 @@ async function renderDetail(id) {
       <dt>Формат</dt><dd>${esc(r.work_format || "—")}</dd>
       <dt>Контакт</dt><dd>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(contact)}</a>` : esc(contact)}</dd>
       <dt>${r.status === "rejected" ? "Почему отклонена" : "Почему подходит"}</dt><dd>${esc(d.reason || (r.status === "pending" ? "ждёт решения LLM" : "—"))}</dd>
-      <dt>Оригинал</dt><dd><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(r.source_title || "сообщение")}</a></dd>
+      <dt>Оригинал</dt><dd>${d.link ? `<a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(r.source_title || "сообщение")}</a>` : esc(r.source_title || "—")}</dd>
       <dt>Найдена</dt><dd>${esc(when(r.created_at))}</dd>
     </dl>
     <section style="display:flex;flex-direction:column;gap:8px"><h3>Текст сообщения</h3><div class="msg">${esc(d.text)}</div></section>
     ${others.length ? `<section style="display:flex;flex-direction:column;gap:8px">
       <h3>Встречалось также в <span class="mono muted" style="font-weight:500">${others.length}</span></h3>
-      <ul class="copies">${others.map((c) => `<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.source_title || c.link)}</a><span class="muted small">${esc(when(c.created_at))}</span></li>`).join("")}</ul>
+      <ul class="copies">${others.map((c) => `<li>${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.source_title || c.link)}</a>` : esc(c.source_title || "—")}<span class="muted small">${esc(when(c.created_at))}</span></li>`).join("")}</ul>
     </section>` : ""}`;
 }
 

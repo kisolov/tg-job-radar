@@ -99,3 +99,19 @@ def test_plain_fallback_keeps_urls_and_drops_tg_links():
             '🔗 <a href="https://t.me/c/1/5">Python Jobs</a>')
     assert to_plain(html) == ("💼 Вакансия\nсуть <тег>\n👤 профиль автора\n"
                               "🔗 Python Jobs: https://t.me/c/1/5")
+
+
+def test_llm_contact_must_match_a_whole_username():
+    """M6: обрезанный/выдуманный @ivan не засчитывается, если в тексте только @ivan_petrov."""
+    f = finding(Classification(True, "vacancy", "s", None, None, "@ivan", "r"),
+                text_snapshot="Пишите @ivan_petrov", sender_username=None, sender_is_user=False)
+    assert contact_line(f) == "контакта нет"
+    f2 = finding(Classification(True, "vacancy", "s", None, None, "@ivan_petrov", "r"),
+                 text_snapshot="Пишите @Ivan_Petrov.", sender_username=None, sender_is_user=False)
+    assert contact_line(f2) == "@ivan_petrov"
+
+
+def test_card_without_message_link_shows_title_only():
+    """M2: у обычной группы ссылок на сообщения нет — название чата без ссылки."""
+    card = render_card(finding(link_snapshot=""), [Copy(1, 1, 5, "", "Старая группа")])
+    assert "🔗 Старая группа" in card and "href=\"\"" not in card

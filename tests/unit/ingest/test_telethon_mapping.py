@@ -93,3 +93,9 @@ def test_to_incoming_anonymous_admin_is_not_a_user():
     m = SimpleNamespace(id=9, message="x", date=datetime(2026, 11, 4, tzinfo=UTC), sender=None,
                         sender_id=-1001234, forward=None)
     assert not to_incoming(_src(), m).sender_is_user
+
+
+def test_basic_group_without_username_has_no_message_link():
+    """M2: t.me/c/<id>/<msg> работает только для супергрупп и каналов."""
+    assert message_link(_src(username=None, peer_id=-4242), 7) == ""
+    assert message_link(_src(username=None), 7) == "https://t.me/c/1234567/7"
