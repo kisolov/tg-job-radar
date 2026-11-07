@@ -80,7 +80,7 @@ class TelegramGateway(Protocol):
         """Live-апдейты передаются в callback только для этих источников."""
 
     async def fetch_new(self, source: Source, min_id: int, limit: int = 100) -> list[IncomingMessage]:
-        """Сообщения с id > min_id, по возрастанию id."""
+        """Сообщения с id > min_id, по возрастанию id. min_id == 0 — последние limit сообщений (хвост истории)."""
 
     async def recent(self, source: Source, limit: int = 30) -> list[IncomingMessage]:
         """Последние сообщения публичного чата (без вступления) — выборка для проверки кандидата."""

@@ -79,7 +79,7 @@ class FakeGateway:
         self.world.fetches.append((self.account.phone, source.id, min_id))
         msgs = sorted((m for m in self.world.history.get(source.id, []) if m.message_id > min_id),
                       key=lambda m: m.message_id)
-        return msgs[:limit]
+        return msgs[-limit:] if min_id == 0 else msgs[:limit]
 
     async def resolve(self, ref: str) -> Resolved:
         self._check("resolve", ref)

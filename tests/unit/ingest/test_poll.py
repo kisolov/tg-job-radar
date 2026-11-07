@@ -43,6 +43,25 @@ async def test_first_poll_all_old_moves_cursor(world):
     assert world.sink.got == [] and (await world.sources.get(ch.id)).last_message_id == 5
 
 
+async def test_first_poll_long_history_takes_tail_only(world):
+    """C1: канал с длинной историей — первый опрос берёт хвост, курсор встаёт на последнее, история не выкачивается."""
+    from datetime import timedelta
+
+    a = await world.add_account()
+    ch = await world.add_source("chan_one", SourceKind.channel, 1, account=a)
+    now = world.clock.now()
+    for i in range(1, 501):
+        world.tg.post(ch.id, i, f"старая вакансия {i}", date=now - timedelta(days=400 - i * 0.5))
+    world.tg.post(ch.id, 501, "свежая", date=now - timedelta(hours=1))
+    gw = world.tg.factory(a)
+    await world.poll.execute(a.id, gw)
+    assert [m.message_id for m in world.sink.got] == [501]
+    assert (await world.sources.get(ch.id)).last_message_id == 501
+    world.clock.advance(300)
+    await world.poll.execute(a.id, gw)
+    assert [m.message_id for m in world.sink.got] == [501]  # старьё не пошло следующими опросами
+
+
 async def test_poll_respects_interval(world):
     a = await world.add_account()
     await world.add_source("chan_one", SourceKind.channel, 1, account=a)

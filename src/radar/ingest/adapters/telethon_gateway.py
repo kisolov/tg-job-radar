@@ -149,6 +149,8 @@ class TelethonGateway:
 
     @_mapped
     async def fetch_new(self, source: Source, min_id: int, limit: int = 100) -> list[IncomingMessage]:
+        if min_id == 0:  # первый опрос: хвост истории, а не её начало
+            return await self.recent(source, limit)
         out = []
         async for m in self._client.iter_messages(_input_peer(source), min_id=min_id, limit=limit, reverse=True):
             if isinstance(m, types.Message):
