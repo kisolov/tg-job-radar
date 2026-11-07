@@ -87,14 +87,26 @@ def message_link(source: Source, message_id: int) -> str:
     return f"https://t.me/c/{real_id}/{message_id}"
 
 
+def _username(entity: Any) -> str | None:
+    """Основной username; у владельцев коллекционных имён (Fragment) он в `usernames`, а `username` — None."""
+    if name := getattr(entity, "username", None):
+        return name
+    return next((u.username for u in getattr(entity, "usernames", None) or [] if u.active), None)
+
+
 def to_incoming(source: Source, m: Any) -> IncomingMessage:
-    # sender бывает None (пост от имени канала, анонимный админ) — сообщение всё равно полезно.
+    # sender бывает None: пост от имени канала / анонимный админ (sender_id < 0) или человек, чья сущность
+    # не пришла в live-апдейте (sender_id > 0) — во втором случае это всё равно человек (I7).
     sender = getattr(m, "sender", None)
-    is_user = isinstance(sender, types.User) and not sender.bot
+    sender_id = getattr(m, "sender_id", None)
+    if sender is None:
+        is_user = bool(sender_id and sender_id > 0)
+    else:
+        is_user = isinstance(sender, types.User) and not sender.bot
     fwd_chat = getattr(getattr(m, "forward", None), "chat", None)
     return IncomingMessage(
         source_id=source.id, message_id=m.id, text=m.message or "", date=m.date,
-        sender_id=getattr(m, "sender_id", None), sender_username=getattr(sender, "username", None),
+        sender_id=sender_id, sender_username=_username(sender),
         sender_is_user=is_user, fwd_from_username=getattr(fwd_chat, "username", None),
         link=message_link(source, m.id), source_title=source.title,
     )

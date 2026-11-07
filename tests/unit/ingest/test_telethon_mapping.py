@@ -69,3 +69,27 @@ def test_to_incoming_channel_post_and_forward():
     got = to_incoming(_src(), m)
     assert got.text == "" and not got.sender_is_user and got.sender_username == "xchan"
     assert got.fwd_from_username == "src_chan"
+
+
+def test_to_incoming_user_without_entity_still_gets_profile_link():
+    """I7: в live-апдейте sender бывает None (min-сущность), но sender_id > 0 — это человек."""
+    m = SimpleNamespace(id=7, message="нужен бот", date=datetime(2026, 11, 4, tzinfo=UTC), sender=None,
+                        sender_id=4242, forward=None)
+    got = to_incoming(_src(), m)
+    assert got.sender_is_user and got.sender_id == 4242 and got.sender_username is None
+
+
+def test_to_incoming_takes_first_active_username_of_collectible_names():
+    """I7: у пользователя с несколькими username (Fragment) основной лежит в usernames, а username — None."""
+    sender = types.User(id=78, username=None, bot=False, usernames=[
+        types.Username(username="old_nick", editable=False, active=False),
+        types.Username(username="cto_marina", editable=True, active=True)])
+    m = SimpleNamespace(id=8, message="x", date=datetime(2026, 11, 4, tzinfo=UTC), sender=sender, sender_id=78,
+                        forward=None)
+    assert to_incoming(_src(), m).sender_username == "cto_marina"
+
+
+def test_to_incoming_anonymous_admin_is_not_a_user():
+    m = SimpleNamespace(id=9, message="x", date=datetime(2026, 11, 4, tzinfo=UTC), sender=None,
+                        sender_id=-1001234, forward=None)
+    assert not to_incoming(_src(), m).sender_is_user
