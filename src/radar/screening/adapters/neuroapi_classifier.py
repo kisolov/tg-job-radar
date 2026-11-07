@@ -69,6 +69,7 @@ class NeuroApiClassifier:
         }
         wanted = {i for i, _ in items}
         spent = Usage()
+        bad_output = False
         last_error = "unknown"
         for _ in range(ATTEMPTS):
             try:
@@ -88,6 +89,7 @@ class NeuroApiClassifier:
                     raise TypeError("items is not a list")
             except (KeyError, IndexError, TypeError, ValueError) as exc:
                 last_error = f"невалидный ответ: {type(exc).__name__}"
+                bad_output = True
                 logger.warning("NeuroAPI вернул невалидный JSON (%s)", last_error)
                 continue
             results = {}
@@ -96,7 +98,7 @@ class NeuroApiClassifier:
                 if parsed and parsed[0] in wanted:
                     results[parsed[0]] = parsed[1]
             return results, spent
-        raise LlmUnavailable(last_error, spent)
+        raise LlmUnavailable(last_error, spent, bad_output)
 
     async def list_models(self) -> list[str]:
         resp = await self._client.get(self._url.removesuffix("/chat/completions") + "/models")

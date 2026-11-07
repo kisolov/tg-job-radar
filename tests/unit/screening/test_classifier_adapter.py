@@ -61,6 +61,7 @@ async def test_malformed_response_keeps_pending():
         await make(rec).classify([("a", "x")], REQ)
     assert len(rec.requests) == 2  # ровно один повтор
     assert (e.value.spent.prompt_tokens, e.value.spent.completion_tokens) == (1, 1)  # I4: оплачено — учтено
+    assert e.value.bad_output  # модель ответила, но мусором — это попытка находки
 
 
 async def test_retry_succeeds_after_garbage():
@@ -93,3 +94,10 @@ async def test_model_override_per_call():
     rec = Recorder(ok_body([ITEM]))
     await make(rec).classify([("a", "x")], REQ, model="gpt-4.1-mini")
     assert rec.requests[0]["model"] == "gpt-4.1-mini"
+
+
+async def test_network_errors_are_not_bad_output():
+    rec = Recorder(httpx.ConnectError("down"), httpx.Response(502))
+    with pytest.raises(LlmUnavailable) as e:
+        await make(rec).classify([("a", "x")], REQ)
+    assert not e.value.bad_output

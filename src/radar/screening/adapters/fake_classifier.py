@@ -19,12 +19,13 @@ class FakeClassifier:
         self.calls: list[list[tuple[str, str]]] = []
         self.fail_next = 0
         self.fail_spent = Usage()  # сколько «оплачено» неудачной попыткой
+        self.fail_bad_output = False  # True — мусорный ответ, False — простой сети
         self.skip: set[str] = set()  # id, которые «модель» молча пропускает
 
     async def classify(self, items, requirements, *, model=None, max_chars=None):
         self.calls.append(list(items))
         if self.fail_next:
             self.fail_next -= 1
-            raise LlmUnavailable("fake outage", self.fail_spent)
+            raise LlmUnavailable("fake outage", self.fail_spent, self.fail_bad_output)
         return ({i: self.rule(t) for i, t in items if i not in self.skip},
                 Usage(10 * len(items), 5 * len(items)))

@@ -133,6 +133,7 @@ async def test_poison_batch_is_given_up_after_three_attempts(clock):
     await env.runtime.load()
     bad = await env.add(1, PY)
     env.classifier.fail_next = 3
+    env.classifier.fail_bad_output = True  # модель отвечает, но мусором
     for _ in range(3):
         with pytest.raises(LlmUnavailable):
             await env.uc.step()
@@ -173,3 +174,17 @@ async def test_long_llm_outage_alerts_owner_once(clock):
     with pytest.raises(asyncio.CancelledError):
         await env.uc.run_forever()
     assert len([a for a in env.alerts.sent if "LLM недоступен" in a]) == 1
+
+
+async def test_network_outage_does_not_burn_attempts(clock):
+    """Сеть/HTTP-ошибки — простой, а не попытка: находки не уходят в failed, сколько бы он ни длился."""
+    env = Env(clock, LLM_BATCH_SIZE=1)
+    await env.runtime.load()
+    f = await env.add(1, PY)
+    env.classifier.fail_next = 5
+    for _ in range(5):
+        with pytest.raises(LlmUnavailable):
+            await env.uc.step()
+    got = await env.findings.get(f.id)
+    assert got.status is FindingStatus.pending and got.llm_attempts == 0
+    assert await env.uc.step() == 1

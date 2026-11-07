@@ -56,7 +56,8 @@ class ClassifyPending:
                 items, text, model=self._runtime.get("NEUROAPI_MODEL"), max_chars=max_chars)
         except LlmUnavailable as exc:
             await self._usage.commit_usage(day, reserved, exc.spent)  # оплаченное — в расход (R8)
-            await self._give_up([f.id for f in batch])
+            if exc.bad_output:  # простой сети — не вина пакета, попытки не тратим
+                await self._give_up([f.id for f in batch])
             raise
         except BaseException:
             await self._usage.release(day, reserved)
