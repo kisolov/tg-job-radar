@@ -106,3 +106,17 @@ async def test_returned_objects_are_copies(finding_repo):
     f, _ = await cluster(finding_repo, msg(1))
     f.status = FindingStatus.delivered
     assert (await finding_repo.get(f.id)).status is FindingStatus.pending
+
+
+async def test_llm_failures_push_back_then_fail(finding_repo):
+    """I4: неудачная попытка отодвигает находку в конец очереди; после max — failed."""
+    f1, _ = await cluster(finding_repo, msg(1))
+    f2, _ = await cluster(finding_repo, msg(2, text="Нужен бот для записи клиентов в салон, бюджет 30 тысяч, пишите"))
+    assert [f.id for f in await finding_repo.pending(10)] == [f1.id, f2.id]
+    assert await finding_repo.record_llm_failure([f1.id], 2) == []
+    assert [f.id for f in await finding_repo.pending(10)] == [f2.id, f1.id]
+    assert await finding_repo.record_llm_failure([f1.id], 2) == [f1.id]
+    got = await finding_repo.get(f1.id)
+    assert got.status is FindingStatus.failed and got.llm_attempts == 2
+    assert await finding_repo.record_llm_failure([f1.id], 2) == []  # уже не pending
+    assert [f.id for f in await finding_repo.pending(10)] == [f2.id]

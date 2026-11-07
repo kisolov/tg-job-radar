@@ -15,6 +15,9 @@ class FindingRepository(Protocol):
     async def get(self, finding_id: int) -> Finding | None: ...
     async def pending(self, limit: int) -> list[Finding]: ...
     async def oldest_pending_at(self) -> datetime | None: ...
+
+    async def record_llm_failure(self, finding_ids: list[int], max_attempts: int) -> list[int]:
+        """+1 к llm_attempts у pending-находок; достигшие max_attempts → failed. → id ставших failed (I4)."""
     async def set_classification(self, finding_id: int, cls: Classification, requirements_version: int) -> bool:
         """pending → accepted|rejected; только из pending."""
 

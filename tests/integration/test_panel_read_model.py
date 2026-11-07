@@ -104,9 +104,10 @@ async def test_findings_tabs_filters_and_search(seed, rm):
     await seed.finding("pending", text="Нужен бот 50% предоплата")
     await seed.finding("delivering", classification=cls("project", "Парсер"))
     await seed.finding("delivered", created_at=T0 - timedelta(days=10), classification=cls())
+    await seed.finding("failed", created_at=T0 - timedelta(hours=1), text="LLM не разобрал")  # I4: к отклонённым
 
     page = await rm.findings(FindingsFilter(since=T0 - timedelta(days=7)))
-    assert page.total == 5 and page.tabs == {"all": 5, "delivered": 2, "queue": 1, "pending": 1, "rejected": 1}
+    assert page.total == 6 and page.tabs == {"all": 6, "delivered": 2, "queue": 1, "pending": 1, "rejected": 2}
     assert [r.status for r in page.items][:1] == ["delivering"]  # новые сверху, при равенстве — по id
 
     projects = await rm.findings(FindingsFilter(tab="delivered", kind="project"))
@@ -117,8 +118,8 @@ async def test_findings_tabs_filters_and_search(seed, rm):
     pct = await rm.findings(FindingsFilter(q="50%"))
     assert pct.total == 1 and pct.items[0].title == "Нужен бот 50% предоплата"  # % не шаблон, а символ
 
-    paged = await rm.findings(FindingsFilter(limit=2, offset=4))
-    assert len(paged.items) == 2 and paged.total == 6
+    paged = await rm.findings(FindingsFilter(limit=2, offset=5))
+    assert len(paged.items) == 2 and paged.total == 7
 
 
 async def test_finding_detail(seed, rm):

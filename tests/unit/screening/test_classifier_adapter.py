@@ -57,9 +57,10 @@ async def test_parses_items():
 async def test_malformed_response_keeps_pending():
     garbage = {"choices": [{"message": {"content": "не json"}}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
     rec = Recorder(garbage, {"choices": [{"message": {"content": '{"nope": 1}'}}]})
-    with pytest.raises(LlmUnavailable):
+    with pytest.raises(LlmUnavailable) as e:
         await make(rec).classify([("a", "x")], REQ)
     assert len(rec.requests) == 2  # ровно один повтор
+    assert (e.value.spent.prompt_tokens, e.value.spent.completion_tokens) == (1, 1)  # I4: оплачено — учтено
 
 
 async def test_retry_succeeds_after_garbage():

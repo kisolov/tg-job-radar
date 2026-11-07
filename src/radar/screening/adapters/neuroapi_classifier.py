@@ -96,7 +96,7 @@ class NeuroApiClassifier:
                 if parsed and parsed[0] in wanted:
                     results[parsed[0]] = parsed[1]
             return results, spent
-        raise LlmUnavailable(last_error)
+        raise LlmUnavailable(last_error, spent)
 
     async def list_models(self) -> list[str]:
         resp = await self._client.get(self._url.removesuffix("/chat/completions") + "/models")

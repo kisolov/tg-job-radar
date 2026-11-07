@@ -16,6 +16,7 @@ from radar.sources.ports import SourceRepository
 
 logger = logging.getLogger(__name__)
 OUTAGE_PAUSE_S = 60
+MAX_LLM_ATTEMPTS = 3
 IDLE_S = 5
 
 
@@ -53,6 +54,10 @@ class ClassifyPending:
         try:
             results, usage = await self._classifier.classify(
                 items, text, model=self._runtime.get("NEUROAPI_MODEL"), max_chars=max_chars)
+        except LlmUnavailable as exc:
+            await self._usage.commit_usage(day, reserved, exc.spent)  # оплаченное — в расход (R8)
+            await self._give_up([f.id for f in batch])
+            raise
         except BaseException:
             await self._usage.release(day, reserved)
             raise
@@ -67,18 +72,27 @@ class ClassifyPending:
                 accepted += 1
                 for source_id in {c.source_id for c in await self._findings.copies(f.id)}:
                     await self._sources.add_found(source_id)
+        await self._give_up([f.id for f in batch if str(f.id) not in results])  # модель пропустила id
         if accepted:
             await self._on_accepted()
         return len(results)
 
+    async def _give_up(self, ids: list[int]) -> None:
+        for fid in await self._findings.record_llm_failure(ids, MAX_LLM_ATTEMPTS):
+            logger.warning("Находка %s: LLM не классифицировал за %s попытки — failed", fid, MAX_LLM_ATTEMPTS)
+
     async def run_forever(self) -> None:
+        outage_since = None
         while True:
             try:
                 n = await self.step()
             except LlmUnavailable as exc:
+                outage_since = outage_since or self._clock.now()
                 logger.warning("LLM недоступен (%s), пауза %s с", exc, OUTAGE_PAUSE_S)
+                await self._screening.outage(outage_since, str(exc))
                 await self._sleep(OUTAGE_PAUSE_S)
                 continue
+            outage_since = None
             await self._sleep(0 if n else IDLE_S)
 
 

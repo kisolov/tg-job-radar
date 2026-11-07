@@ -110,6 +110,7 @@ def upgrade() -> None:
         sa.Column("claimed_at", TS),
         sa.Column("delivered_at", TS),
         sa.Column("bot_message_id", sa.BigInteger),
+        sa.Column("llm_attempts", sa.Integer, nullable=False, server_default="0"),
         sa.Column("created_at", TS, nullable=False),
     )
     op.create_index("ix_findings_fp", "findings", ["fingerprint", "created_at"])

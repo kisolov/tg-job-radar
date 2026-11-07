@@ -23,6 +23,7 @@ class FindingStatus(str, Enum):
     accepted = "accepted"  # подходит, ждёт доставки
     delivering = "delivering"  # claim: отправка идёт
     delivered = "delivered"
+    failed = "failed"  # LLM так и не смог классифицировать (I4)
 
 
 @dataclass
@@ -44,6 +45,7 @@ class Finding:
     delivered_at: datetime | None
     bot_message_id: int | None
     created_at: datetime
+    llm_attempts: int = 0  # неудачных попыток LLM; после MAX — failed (I4)
 
 
 @dataclass(frozen=True)

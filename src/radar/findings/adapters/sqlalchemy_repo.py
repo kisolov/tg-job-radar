@@ -22,7 +22,7 @@ def _row(r) -> Finding:
         sender_is_user=r.sender_is_user, status=FindingStatus(r.status),
         classification=Classification(**r.classification) if r.classification else None,
         requirements_version=r.requirements_version, claimed_at=r.claimed_at, delivered_at=r.delivered_at,
-        bot_message_id=r.bot_message_id, created_at=r.created_at,
+        bot_message_id=r.bot_message_id, created_at=r.created_at, llm_attempts=r.llm_attempts,
     )
 
 
@@ -75,8 +75,20 @@ class SqlAlchemyFindingRepository:
         return rows[0] if rows else None
 
     async def pending(self, limit: int) -> list[Finding]:
-        return await self._select(t.c.status == FindingStatus.pending.value, order=(t.c.created_at, t.c.id),
-                                  limit=limit)
+        # неудачные у LLM — в конец очереди: не держат пакет (I4)
+        return await self._select(t.c.status == FindingStatus.pending.value,
+                                  order=(t.c.llm_attempts, t.c.created_at, t.c.id), limit=limit)
+
+    async def record_llm_failure(self, finding_ids: list[int], max_attempts: int) -> list[int]:
+        if not finding_ids:
+            return []
+        pending = (t.c.id.in_(finding_ids), t.c.status == FindingStatus.pending.value)
+        async with transaction(self._sf) as s:
+            await s.execute(t.update().where(*pending).values(llm_attempts=t.c.llm_attempts + 1))
+            failed = (await s.execute(
+                t.update().where(*pending, t.c.llm_attempts >= max_attempts)
+                .values(status=FindingStatus.failed.value).returning(t.c.id))).scalars().all()
+        return sorted(failed)
 
     async def oldest_pending_at(self) -> datetime | None:
         async with self._sf() as s:

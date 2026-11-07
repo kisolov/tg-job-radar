@@ -87,6 +87,7 @@ findings = sa.Table(
     sa.Column("claimed_at", TS),
     sa.Column("delivered_at", TS),
     sa.Column("bot_message_id", sa.BigInteger),
+    sa.Column("llm_attempts", sa.Integer, nullable=False, server_default="0"),
     sa.Column("created_at", TS, nullable=False),
     sa.Index("ix_findings_fp", "fingerprint", "created_at"),
     sa.Index("ix_findings_window", "created_at", "shingle_count"),

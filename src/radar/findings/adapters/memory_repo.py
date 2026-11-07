@@ -48,7 +48,21 @@ class InMemoryFindingRepository:
         return deepcopy(rows[:limit])
 
     async def pending(self, limit: int) -> list[Finding]:
-        return self._by_status(FindingStatus.pending, limit)
+        rows = sorted((f for f in self.rows.values() if f.status is FindingStatus.pending),
+                      key=lambda f: (f.llm_attempts, f.created_at, f.id))
+        return deepcopy(rows[:limit])
+
+    async def record_llm_failure(self, finding_ids: list[int], max_attempts: int) -> list[int]:
+        failed = []
+        for fid in finding_ids:
+            f = self.rows.get(fid)
+            if f is None or f.status is not FindingStatus.pending:
+                continue
+            f.llm_attempts += 1
+            if f.llm_attempts >= max_attempts:
+                f.status = FindingStatus.failed
+                failed.append(fid)
+        return sorted(failed)
 
     async def oldest_pending_at(self) -> datetime | None:
         p = self._by_status(FindingStatus.pending, 1)

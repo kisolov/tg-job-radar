@@ -25,7 +25,7 @@ from radar.shared.models import sources as st
 TITLE_MAX = 140
 FOUND = ("accepted", "delivering", "delivered")
 TAB_STATUSES = {"delivered": ("delivered",), "queue": ("accepted", "delivering"), "pending": ("pending",),
-                "rejected": ("rejected",)}
+                "rejected": ("rejected", "failed")}
 
 _cls = ft.c.classification
 _kind = _cls["kind"].astext

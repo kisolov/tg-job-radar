@@ -15,7 +15,12 @@ class Usage:
 
 
 class LlmUnavailable(Exception):
-    """LLM не ответил осмысленно (сеть, 5xx, мусор после повтора). Пакет остаётся pending."""
+    """LLM не ответил осмысленно (сеть, 5xx, мусор после повтора). Пакет остаётся pending.
+    spent — токены, уже оплаченные неудачными попытками (I4: идут в дневной расход)."""
+
+    def __init__(self, message: str = "", spent: "Usage | None" = None) -> None:
+        super().__init__(message)
+        self.spent = spent or Usage()
 
 
 class LlmClassifier(Protocol):

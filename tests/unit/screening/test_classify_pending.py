@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from radar.accounts.adapters.alerts import RecordingAlertSink
@@ -8,7 +10,7 @@ from radar.findings.similarity import fingerprint, normalize, shingles
 from radar.ingest.ports import IncomingMessage
 from radar.screening.adapters.fake_classifier import FakeClassifier
 from radar.screening.adapters.memory_repos import InMemoryRequirementsRepository, InMemoryUsageRepository
-from radar.screening.ports import LlmUnavailable
+from radar.screening.ports import LlmUnavailable, Usage
 from radar.screening.service import ScreeningService
 from radar.screening.usecases import ClassifyPending
 from radar.shared.runtime import InMemoryOverridesStore, RuntimeConfig
@@ -110,3 +112,64 @@ async def test_runtime_override_applies(clock):
     await env.runtime.set("LLM_BATCH_SIZE", "1")
     await env.add(1, PY)
     assert await env.uc.step() == 1  # пакет из 1 — без ожидания окна
+
+
+async def test_failed_attempt_tokens_are_counted(clock):
+    """I4: токены неудачной попытки (мусорный JSON) входят в дневной расход, а не теряются."""
+    env = Env(clock, LLM_BATCH_SIZE=1)
+    await env.runtime.load()
+    await env.add(1, PY)
+    env.classifier.fail_next = 1
+    env.classifier.fail_spent = Usage(300, 20)
+    with pytest.raises(LlmUnavailable):
+        await env.uc.step()
+    st = await env.usage.get(clock.now().date())
+    assert (st.prompt_tokens, st.completion_tokens, st.reserved, st.requests) == (300, 20, 0, 1)
+
+
+async def test_poison_batch_is_given_up_after_three_attempts(clock):
+    """I4: пакет, который LLM стабильно не разбирает, не крутится вечно и не держит очередь."""
+    env = Env(clock, LLM_BATCH_SIZE=1)
+    await env.runtime.load()
+    bad = await env.add(1, PY)
+    env.classifier.fail_next = 3
+    for _ in range(3):
+        with pytest.raises(LlmUnavailable):
+            await env.uc.step()
+    assert (await env.findings.get(bad.id)).status is FindingStatus.failed
+    good = await env.add(2, JAVA)
+    assert await env.uc.step() == 1 and (await env.findings.get(good.id)).status is FindingStatus.rejected
+
+
+async def test_skipped_item_goes_to_the_back_and_fails_after_three_skips(clock):
+    """I4: id, который модель пропускает, не занимает слот пакета вечно."""
+    env = Env(clock, LLM_BATCH_SIZE=2)
+    await env.runtime.load()
+    skipped = await env.add(1, PY)
+    env.classifier.skip = {str(skipped.id)}
+    others = [await env.add(10 + i, JAVA + f" #{i}") for i in range(3)]
+    for _ in range(5):
+        clock.advance(61)  # одиночный хвост ждёт окна пакета
+        await env.uc.step()
+    assert (await env.findings.get(skipped.id)).status is FindingStatus.failed
+    assert [(await env.findings.get(o.id)).status for o in others] == [FindingStatus.rejected] * 3
+
+
+async def test_long_llm_outage_alerts_owner_once(clock):
+    env = Env(clock, LLM_BATCH_SIZE=1)
+    await env.runtime.load()
+    sleeps = []
+
+    async def fake_sleep(s):
+        sleeps.append(s)
+        clock.advance(s)
+        if len(sleeps) >= 70:
+            raise asyncio.CancelledError
+
+    env.uc._sleep = fake_sleep
+    for i in range(80):
+        await env.add(100 + i, " ".join(f"токен{i}x{j}" for j in range(20)))  # разные — не склеятся дедупом
+    env.classifier.fail_next = 10_000
+    with pytest.raises(asyncio.CancelledError):
+        await env.uc.run_forever()
+    assert len([a for a in env.alerts.sent if "LLM недоступен" in a]) == 1
