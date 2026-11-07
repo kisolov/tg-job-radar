@@ -40,10 +40,16 @@ class ReceiveMessage:
         self._log, self._sink, self._sources, self._clock = log, sink, sources, clock
 
     async def execute(self, msg: IncomingMessage) -> bool:
-        await self._sources.set_cursor(msg.source_id, msg.message_id)
+        """Курсор двигается только после успешной обработки; сбой стирает отметку — опрос возьмёт снова (I5)."""
         if not await self._log.remember(msg.source_id, msg.message_id, self._clock.now()):
             return False
-        await self._sink.submit(msg)
+        try:
+            await self._sink.submit(msg)
+        except BaseException:
+            await self._log.forget(msg.source_id, msg.message_id)
+            raise
+        await self._log.done(msg.source_id, msg.message_id)
+        await self._sources.set_cursor(msg.source_id, msg.message_id)
         return True
 
 
@@ -82,8 +88,13 @@ class PollChannels:
                 if msgs and not fresh:
                     await self._sources.set_cursor(source.id, msgs[-1].message_id)
                 msgs = fresh
-            for m in msgs:
-                await self._receive.execute(m)
+            try:
+                for m in msgs:
+                    await self._receive.execute(m)
+            except (TgFlood, TgBanned, TgUnauthorized, ConnectionError):
+                raise
+            except Exception:  # I3/I5: курсор стоит на последнем обработанном — остальное возьмёт следующий опрос
+                logger.exception("Обработка сообщений источника %s прервана", source.ref)
             await self._sources.set_polled(source.id, now)
         return len(due)
 

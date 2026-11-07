@@ -99,6 +99,7 @@ async def run(c: Container) -> None:
     await asyncio.to_thread(run_migrations, s.DATABASE_URL)
     await c.runtime().load()
     await c.source_repo().reset_resolving()
+    await c.message_log().purge_unprocessed()  # I5: перечитать то, что упало посередине
 
     dp = Dispatcher()
     dp.include_router(build_router(s.OWNER_TELEGRAM_ID, c.bot_deps()))

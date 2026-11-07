@@ -104,7 +104,16 @@ class GatewayFactory(Protocol):
 
 class MessageLog(Protocol):
     async def remember(self, source_id: int, message_id: int, seen_at: datetime) -> bool:
-        """True — сообщение видим впервые (R2). Повтор → False."""
+        """True — сообщение видим впервые (R2). Повтор → False. Запись «в работе» до done()."""
+
+    async def done(self, source_id: int, message_id: int) -> None:
+        """Обработка завершена: запись больше не снимается purge_unprocessed (I5)."""
+
+    async def forget(self, source_id: int, message_id: int) -> None:
+        """Обработка упала: стереть запись, чтобы следующий опрос взял сообщение снова (I5)."""
+
+    async def purge_unprocessed(self) -> int:
+        """На старте: стереть записи, оставшиеся «в работе» после падения процесса (I5)."""
 
     async def purge_older(self, before: datetime) -> int: ...
 

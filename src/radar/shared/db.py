@@ -7,7 +7,7 @@ SessionFactory = async_sessionmaker[AsyncSession]
 
 
 def make_engine(url: str) -> AsyncEngine:
-    return create_async_engine(url, pool_pre_ping=True)
+    return create_async_engine(url, pool_pre_ping=True, pool_size=20, max_overflow=20, pool_timeout=60)
 
 
 def make_session_factory(engine: AsyncEngine) -> SessionFactory:

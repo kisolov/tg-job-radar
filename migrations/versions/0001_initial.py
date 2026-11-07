@@ -74,6 +74,7 @@ def upgrade() -> None:
         sa.Column("source_id", sa.BigInteger, primary_key=True),
         sa.Column("message_id", sa.BigInteger, primary_key=True),
         sa.Column("seen_at", TS, nullable=False),
+        sa.Column("processed_at", TS),
     )
     op.create_index("ix_messages_seen_at", "messages", ["seen_at"])
     req = op.create_table(

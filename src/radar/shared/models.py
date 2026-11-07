@@ -110,6 +110,7 @@ messages = sa.Table(
     sa.Column("source_id", sa.BigInteger, primary_key=True),
     sa.Column("message_id", sa.BigInteger, primary_key=True),
     sa.Column("seen_at", TS, nullable=False),
+    sa.Column("processed_at", TS),
     sa.Index("ix_messages_seen_at", "seen_at"),
 )
 
