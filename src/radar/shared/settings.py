@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     CLAIM_STALE_S: int = 600
     MESSAGES_RETENTION_DAYS: int = 7
 
+    WEB_HOST: str = "127.0.0.1"
+    WEB_PORT: int = 8080  # 0 — панель выключена
+    WEB_BASE_URL: str = "http://localhost:8080"  # адрес, который бот вставляет в ссылку /web
+    WEB_SECRET: str = ""  # пусто — выводится из BOT_TOKEN
+
     @field_validator("PREFILTER_MARKERS", "PREFILTER_STOPWORDS", "AGGREGATOR_DOMAINS", mode="before")
     @classmethod
     def _split_csv(cls, v: object) -> object:

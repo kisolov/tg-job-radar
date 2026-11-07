@@ -54,4 +54,11 @@ RedeliverStale (раз в минуту): delivering старше CLAIM_STALE_S �
 
 `alembic upgrade head` → `RuntimeConfig.load` → `reset_resolving` → задачи под `supervise` (падение/выход →
 перезапуск с паузой 5 → 10 → … ≤ 300 с): `pool`, `classify`, `deliver`, `copy-edit`, `redeliver-stale`,
-`purge-messages`, `bot` (aiogram polling).
+`purge-messages`, `bot` (aiogram polling), `web` (панель на `WEB_HOST:WEB_PORT`, если `WEB_PORT` ≠ 0).
+
+## Панель
+
+Браузер → `/api/*` → usecase панели → `PanelReadModel` (SELECT по `findings`, `finding_copies`, `sources`,
+`accounts`) + `UsageRepository.get(сегодня UTC)` + `RuntimeConfig`. Сутки KPI — UTC, как `daily_stats`; «Находки за 7
+дней» — `delivered_at` по дням UTC. Запись из панели идёт теми же путями, что и бот: `AddSource` → `SourceService.add_refs`,
+удаление → `SourceService.remove(ref)`, пауза → `RuntimeConfig.set_paused`.

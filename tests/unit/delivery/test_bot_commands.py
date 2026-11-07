@@ -28,7 +28,7 @@ async def env(clock):
     deps = BotDeps(
         accounts=accounts, sources=sources, source_service=SourceService(sources, accounts),
         requirements=InMemoryRequirementsRepository(), usage=InMemoryUsageRepository(), runtime=runtime,
-        clock=clock,
+        clock=clock, web_link=lambda: "http://panel.local/login?t=TOKEN",
     )
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(build_router(OWNER, deps))
@@ -49,7 +49,7 @@ async def env(clock):
 
 
 async def test_non_owner_ignored(env):
-    for cmd in ("/status", "/add t.me/x_chat", "/setreq", "/pause", "/set LLM_BATCH_SIZE 1", "привет"):
+    for cmd in ("/status", "/add t.me/x_chat", "/setreq", "/pause", "/set LLM_BATCH_SIZE 1", "/web", "привет"):
         await env.say(cmd, user=STRANGER)
     assert env.session.calls == []
     assert await env.deps.sources.find("x_chat") is None
@@ -110,3 +110,15 @@ async def test_sources_list(env):
     await env.deps.sources.add_found(s.id, 4)
     reply = await env.say("/sources")
     assert "Good chat" in reply and "4" in reply
+
+
+async def test_web_sends_one_time_login_link(env):
+    reply = await env.say("/web")
+    assert "http://panel.local/login?t=TOKEN" in reply and "10 минут" in reply
+
+
+async def test_web_when_panel_disabled(env):
+    env.deps.web_link = None
+    env.dp.sub_routers.clear()
+    env.dp.include_router(build_router(OWNER, env.deps))
+    assert "выключена" in await env.say("/web")

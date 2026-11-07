@@ -50,6 +50,9 @@ docker compose exec app radar sources import seeds/sources.txt
 | `DEDUP_WINDOW_DAYS` / `DEDUP_JACCARD` | 7 / 0.6 | окно и порог похожести дублей |
 | `CLAIM_STALE_S` | 600 | зависшая отправка повторяется через |
 | `MESSAGES_RETENTION_DAYS` | 7 | сколько помнить виденные сообщения |
+| `WEB_PORT` / `WEB_HOST` | 8080 / 127.0.0.1 | веб-панель; `WEB_PORT=0` — выключить |
+| `WEB_BASE_URL` | http://localhost:8080 | адрес панели в ссылке `/web` (https → cookie с Secure) |
+| `WEB_SECRET` | пусто | ключ подписи входа; пусто — выводится из `BOT_TOKEN` |
 
 ## Бот (только владелец, остальным — тишина)
 
@@ -61,7 +64,17 @@ docker compose exec app radar sources import seeds/sources.txt
 | `/sources [страница]` | источники по числу находок |
 | `/req`, `/setreq` | показать / заменить требования (новый текст — следующим сообщением) |
 | `/pause`, `/resume` | пауза доставки; находки копятся и придут после `/resume` |
+| `/web` | одноразовая ссылка входа в веб-панель (10 минут) |
 | `/set KEY VALUE` | на ходу: `LLM_BATCH_SIZE`, `LLM_BATCH_WAIT_S`, `LLM_MAX_CHARS`, `LLM_DAILY_TOKEN_LIMIT`, `NEUROAPI_MODEL`, `PREFILTER_MIN_LEN` |
+
+## Веб-панель
+
+Обзор (парсеры, конвейер за сутки, LLM, находки за 7 дней), все находки с решением LLM и текстом, источники
+с добавлением и удалением. Вход — команда `/web` в боте: ссылка одноразовая, дальше cookie на 30 дней.
+
+В compose панель слушает `127.0.0.1:8080` хоста. На VPS удобнее всего SSH-туннель: `ssh -L 8080:localhost:8080 vps`,
+`WEB_BASE_URL=http://localhost:8080`. Для доступа из интернета — reverse-proxy с TLS перед портом и
+`WEB_BASE_URL=https://…`.
 
 ## CLI
 

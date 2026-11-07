@@ -13,6 +13,7 @@
 | `delivery` | как находка и управление выглядят в боте | `bot.py` (aiogram Router, фильтр владельца) → usecases (`StatusReport`, `ListSources`, `ShowRequirements`, `SetRequirements`, `SetPaused`, `SetOverride`, `AttachCopyEdit`) → порт `Notifier` (`AiogramNotifier` / фейк; он же `AlertSink`); `card.py` |
 | `findings` | что считать одной находкой | usecases (`ClusterMessage` — `MessageSink` конвейера, `DeliverAccepted`, `RedeliverStale`) → `FindingService` → `FindingRepository`; `similarity.py`, `events.py` (`CopyAttached`, `InProcessEventBus`) |
 | `sources` | какие чаты читаем и кто их читает | usecases (`AddSource`, `RemoveSource`, `ImportSeeds`, `AssignWork`, `ReleaseAccountSources`) → `SourceService` → `SourceRepository` |
+| `panel` | как состояние системы выглядит в браузере | `web.py` (aiohttp, страница `static/` без сборки + JSON) → usecases (`GetOverview`, `ListFindings`, `GetFinding`, `ListPanelSources`, `RemoveSourceById`; запись — `AddSource`, `SetPaused`) → порт `PanelReadModel` (только SQL-реализация, тесты на Postgres); `auth.py` — вход по одноразовой ссылке |
 | `screening` | решение «подходит ли сообщение» | `prefilter.py` (чистые функции); usecases (`ProbeModel`, `ClassifyPending`) → `ScreeningService` (оценка пакета, бюджет) → порты `LlmClassifier` (NeuroAPI / фейк), `UsageRepository`, `RequirementsRepository` |
 
 ### screening — LLM
@@ -55,11 +56,23 @@
 человек → `tg://user?id=` → «контакта нет» (пост канала, анонимный админ).
 
 Команды (только `OWNER_TELEGRAM_ID`, остальным — тишина): `/status`, `/add`, `/remove`, `/sources [стр]`, `/req`,
-`/setreq` (следующее сообщение — новый текст, `/cancel`), `/pause`, `/resume`, `/set KEY VALUE` для
+`/setreq` (следующее сообщение — новый текст, `/cancel`), `/pause`, `/resume`, `/web` (ссылка входа в панель), `/set KEY VALUE` для
 `LLM_BATCH_SIZE, LLM_BATCH_WAIT_S, LLM_MAX_CHARS, LLM_DAILY_TOKEN_LIMIT, NEUROAPI_MODEL, PREFILTER_MIN_LEN`.
 
 `shared/runtime.py` — `RuntimeConfig`: env + `settings_overrides`; снимок в памяти процесса, обновляется при `/set`
 (допущение одной реплики). Флаг паузы — ключ `DELIVERY_PAUSED`.
+
+### panel
+
+Спек: `docs/superpowers/specs/2026-11-07-web-panel-design.md`, макет: `design/web-panel/`. Три экрана (`#/`, `#/findings`,
+`#/sources`), автообновление шапки и обзора раз в 30 с. Ручки: `GET /api/overview`, `GET /api/findings?tab&kind&period&q&page`,
+`GET /api/findings/{id}`, `GET /api/sources?tab&kind&sort&page`, `POST /api/sources {text}`, `DELETE /api/sources/{id}`,
+`POST /api/delivery {paused}`. Статус источника на экране вычисляется: `active` и (канал или вступили) → «читается»,
+`active` группа без вступления → «ждёт вступления», `candidate`/`resolving` → «ждёт резолва».
+
+Вход: `/web` → `WEB_BASE_URL/login?t=<login.exp.nonce.hmac>` (10 мин, одноразово — nonce в памяти процесса) →
+cookie `radar_session` (HMAC, 30 дней, HttpOnly, SameSite=Lax, Secure при https). Секрет — `WEB_SECRET` или sha256 от
+`BOT_TOKEN`. Изменяющие запросы требуют `X-Radar: 1`.
 
 ### findings
 

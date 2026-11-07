@@ -5,9 +5,11 @@ from collections.abc import Awaitable, Callable
 from datetime import timedelta
 
 from aiogram import Dispatcher
+from aiohttp import web
 
 from radar.bootstrap.di import Container
 from radar.delivery.bot import build_router
+from radar.panel.web import build_app
 
 logger = logging.getLogger("radar")
 
@@ -79,6 +81,19 @@ async def _purge_messages(c: Container) -> None:
     logger.info("Чистка messages: удалено %s", removed)
 
 
+async def serve_panel(c: Container) -> None:
+    """Веб-панель в том же процессе; живёт до отмены задачи."""
+    s = c.settings()
+    runner = web.AppRunner(build_app(c.panel_deps()), access_log=None)
+    await runner.setup()
+    try:
+        await web.TCPSite(runner, s.WEB_HOST, s.WEB_PORT).start()
+        logger.info("Панель: http://%s:%s (ссылка входа — /web в боте)", s.WEB_HOST, s.WEB_PORT)
+        await asyncio.Event().wait()
+    finally:
+        await runner.cleanup()
+
+
 async def run(c: Container) -> None:
     s = c.settings()
     await asyncio.to_thread(run_migrations, s.DATABASE_URL)
@@ -99,6 +114,8 @@ async def run(c: Container) -> None:
         "retire-useless": lambda: every(86400, c.retire_useless().execute),
         "bot": lambda: dp.start_polling(bot, handle_signals=False),
     }
+    if s.WEB_PORT:
+        jobs["web"] = lambda: serve_panel(c)
     tasks = [asyncio.create_task(supervise(name, job), name=name) for name, job in jobs.items()]
     logger.info("radar запущен: %s", ", ".join(jobs))
     try:

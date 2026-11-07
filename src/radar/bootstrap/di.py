@@ -15,7 +15,7 @@ from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts,
 from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
 from radar.delivery.bot import BotDeps
 from radar.delivery.card import render_card
-from radar.delivery.usecases import AttachCopyEdit
+from radar.delivery.usecases import AttachCopyEdit, SetPaused
 from radar.findings.adapters.sqlalchemy_repo import SqlAlchemyFindingRepository
 from radar.findings.events import InProcessEventBus
 from radar.findings.service import FindingService
@@ -24,6 +24,10 @@ from radar.ingest.adapters.sqlalchemy_log import SqlAlchemyMessageLog
 from radar.ingest.adapters.telethon_gateway import TelethonGatewayFactory
 from radar.ingest.pool import PoolRunner, WorkerFactory
 from radar.ingest.usecases import PollChannels, ReceiveMessage, RunJoinQueue, RunResolveQueue, SearchSources
+from radar.panel.adapters.sqlalchemy_read_model import SqlAlchemyPanelReadModel
+from radar.panel.auth import PanelAuth, secret_from
+from radar.panel.usecases import GetFinding, GetOverview, ListFindings, ListPanelSources, RemoveSourceById
+from radar.panel.web import PanelDeps
 from radar.screening.adapters.neuroapi_classifier import NeuroApiClassifier
 from radar.screening.adapters.sqlalchemy_repos import SqlAlchemyRequirementsRepository, SqlAlchemyUsageRepository
 from radar.screening.prefilter import PrefilterConfig
@@ -65,6 +69,14 @@ class DeliveryTrigger:
 
     async def __call__(self) -> None:
         self.event.set()
+
+
+def web_link_factory(settings: Settings, auth: PanelAuth):
+    """Для /web: функция, выдающая одноразовую ссылку входа; None — панель выключена."""
+    if not settings.WEB_PORT:
+        return None
+    base = settings.WEB_BASE_URL.rstrip("/")
+    return lambda: f"{base}/login?t={auth.issue_login()}"
 
 
 class Container(containers.DeclarativeContainer):
@@ -177,7 +189,27 @@ class Container(containers.DeclarativeContainer):
         gateway_factory=gateway_factory, clock=clock,
     )
 
+    # panel
+    panel_auth = providers.Singleton(
+        PanelAuth, secret=providers.Callable(secret_from, settings.provided.WEB_SECRET, settings.provided.BOT_TOKEN),
+        clock=clock,
+    )
+    panel_read_model = providers.Singleton(SqlAlchemyPanelReadModel, sf=sessions)
+    panel_deps = providers.Singleton(
+        PanelDeps, auth=panel_auth,
+        overview=providers.Factory(GetOverview, read_model=panel_read_model, accounts=account_repo, usage=usage_repo,
+                                   runtime=runtime, clock=clock),
+        findings=providers.Factory(ListFindings, read_model=panel_read_model, clock=clock),
+        finding=providers.Factory(GetFinding, read_model=panel_read_model),
+        sources=providers.Factory(ListPanelSources, read_model=panel_read_model, clock=clock),
+        add_source=add_source,
+        remove_source=providers.Factory(RemoveSourceById, sources=source_repo, service=source_service),
+        set_paused=providers.Factory(SetPaused, runtime=runtime),
+        secure_cookie=providers.Callable(lambda url: url.startswith("https://"), settings.provided.WEB_BASE_URL),
+    )
+
     bot_deps = providers.Singleton(
         BotDeps, accounts=account_repo, sources=source_repo, source_service=source_service,
         requirements=requirements_repo, usage=usage_repo, runtime=runtime, clock=clock,
+        web_link=providers.Callable(web_link_factory, settings, panel_auth),
     )

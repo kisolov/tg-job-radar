@@ -1,4 +1,5 @@
 """Бот управления: команды только от владельца (R11), остальным — молчание."""
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from aiogram import F, Router
@@ -31,6 +32,7 @@ HELP = (
     "/sources [страница] — источники по числу находок\n"
     "/req — текущие требования; /setreq — заменить (следующим сообщением)\n"
     "/pause, /resume — пауза доставки (находки копятся)\n"
+    "/web — ссылка входа в веб-панель\n"
     "/set <KEY> <VALUE> — " + ", ".join(EDITABLE)
 )
 
@@ -44,6 +46,7 @@ class BotDeps:
     usage: UsageRepository
     runtime: RuntimeConfig
     clock: Clock
+    web_link: Callable[[], str] | None = None  # одноразовая ссылка входа в панель; None — панель выключена
 
 
 class ReqEdit(StatesGroup):
@@ -117,6 +120,13 @@ def build_router(owner_id: int, deps: BotDeps) -> Router:
     async def _resume(m: Message) -> None:
         await set_paused.execute(False)
         await m.answer("▶️ Доставка возобновлена.")
+
+    @router.message(Command("web"))
+    async def _web(m: Message) -> None:
+        if deps.web_link is None:
+            await m.answer("Веб-панель выключена (WEB_PORT=0).")
+            return
+        await m.answer(f"Вход в панель (ссылка одноразовая, 10 минут):\n{deps.web_link()}")
 
     @router.message(Command("set"))
     async def _set(m: Message, command: CommandObject) -> None:
