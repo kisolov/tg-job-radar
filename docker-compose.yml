@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./seeds:/app/seeds:ro
+      - ./accounts:/app/accounts:ro  # tdata и JSON аккаунтов для `radar accounts import*`
     ports:
       - "127.0.0.1:8080:8080"
   db:

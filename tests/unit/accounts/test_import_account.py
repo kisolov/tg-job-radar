@@ -21,10 +21,14 @@ class FakeProbe:
     def __init__(self, authorized: bool = True) -> None:
         self.authorized = authorized
         self.calls: list[tuple] = []
+        self.phones: dict[str, str] = {}  # session → номер, который «вернёт Telegram»
 
     async def check(self, session: str, api_id: int, api_hash: str, device: DeviceProfile) -> bool:
         self.calls.append((session, api_id, api_hash))
         return self.authorized
+
+    async def phone(self, session: str, api_id: int, api_hash: str, device: DeviceProfile) -> str | None:
+        return self.phones.get(session)
 
 
 def make_import(repo, probe, clock, box=None):

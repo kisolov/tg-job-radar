@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 from uuid import UUID
 
@@ -29,6 +31,22 @@ class SecretBox(Protocol):
 
 class SessionProbe(Protocol):
     async def check(self, session: str, api_id: int, api_hash: str, device: DeviceProfile) -> bool: ...
+
+    async def phone(self, session: str, api_id: int, api_hash: str, device: DeviceProfile) -> str | None:
+        """Номер аккаунта сессии (get_me); None — сессия не авторизована."""
+
+
+@dataclass(frozen=True)
+class TdataSession:
+    session: str  # Telethon StringSession
+    api_id: int
+    api_hash: str
+    user_id: int | None
+
+
+class TdataReader(Protocol):
+    async def read(self, path: Path | str, passcode: str | None = None) -> list[TdataSession]:
+        """Папка tdata Telegram Desktop → сессии её аккаунтов. Битая/зашифрованная — InvalidAccountPayload."""
 
 
 class DeviceProfileProvider(Protocol):

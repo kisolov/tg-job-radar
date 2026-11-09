@@ -8,7 +8,7 @@
 | Модуль | Секрет | Слои |
 |---|---|---|
 | `shared` | настройки, БД, часы | — |
-| `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe`, `DeviceProfileProvider`, `AlertSink` |
+| `accounts` | жизненный цикл и темп аккаунтов-читателей | usecases (`ImportAccount`, `ImportTdata`, `LoginAccount`, `ListAccounts`, `DisableAccount`) → `AccountService` (темп, статусы, алерты) → порты `AccountRepository`, `SecretBox`, `SessionProbe` (`check`, `phone`), `DeviceProfileProvider`, `AlertSink`, `TdataReader` (`OpenteleTdataReader`: tdata → StringSession без сети, `UseCurrentSession`) |
 | `ingest` | транспорт Telegram (Telethon) | usecases (`ReceiveMessage`, `PollChannels`, `RunJoinQueue`, `RunResolveQueue`, `SearchSources`) → порты `TelegramGateway`, `MessageLog`, `MessageSink` (сервиса нет); `pool.py` — `PoolRunner` + `AccountWorker` |
 | `delivery` | как находка и управление выглядят в боте | `bot.py` (aiogram Router, фильтр владельца) → usecases (`StatusReport`, `ListSources`, `ShowRequirements`, `SetRequirements`, `SetPaused`, `SetOverride`, `AttachCopyEdit`) → порт `Notifier` (`AiogramNotifier` / фейк; он же `AlertSink`); `card.py` |
 | `findings` | что считать одной находкой | usecases (`ClusterMessage` — `MessageSink` конвейера, `DeliverAccepted`, `RedeliverStale`) → `FindingService` → `FindingRepository`; `similarity.py`, `events.py` (`CopyAttached`, `InProcessEventBus`) |

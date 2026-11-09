@@ -10,9 +10,10 @@ from radar.accounts.adapters.device_profiles import DefaultDeviceProfileProvider
 from radar.accounts.adapters.fernet_box import FernetSecretBox
 from radar.accounts.adapters.session_probe import TelethonSessionProbe, interactive_login
 from radar.accounts.adapters.sqlalchemy_repo import SqlAlchemyAccountRepository
+from radar.accounts.adapters.tdata_reader import OpenteleTdataReader
 from radar.accounts.entities import PacingPolicy
 from radar.accounts.service import AccountService
-from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts, LoginAccount
+from radar.accounts.usecases import DisableAccount, ImportAccount, ImportTdata, ListAccounts, LoginAccount
 from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
 from radar.delivery.adapters.panel_notifier import PanelOnlyNotifier
 from radar.delivery.bot import BotDeps
@@ -125,6 +126,8 @@ class Container(containers.DeclarativeContainer):
         clock=clock, default_device_profile=settings.provided.USERBOT_DEVICE_PROFILE,
         join_policy=join_policy, resolve_policy=resolve_policy, rng=rng,
     )
+    tdata_reader = providers.Singleton(OpenteleTdataReader)
+    import_tdata = providers.Factory(ImportTdata, importer=import_account, reader=tdata_reader, probe=session_probe)
     login_account = providers.Factory(LoginAccount, importer=import_account, login_session=interactive_login)
     list_accounts = providers.Factory(ListAccounts, accounts=account_repo)
     disable_account = providers.Factory(DisableAccount, accounts=account_repo, service=account_service)

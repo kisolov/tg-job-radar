@@ -16,6 +16,10 @@ def build_parser() -> argparse.ArgumentParser:
     acc = groups.add_parser("accounts", help="пул аккаунтов-читателей").add_subparsers(dest="cmd", required=True)
     imp = acc.add_parser("import", help="импорт аккаунта из JSON (phone, session_str|session, app_id, app_hash)")
     imp.add_argument("file", type=Path)
+    td = acc.add_parser("import-tdata", help="импорт из папки tdata Telegram Desktop (номер спросим у Telegram)")
+    td.add_argument("path", type=Path, help="папка tdata или папка аккаунта, в которой она лежит")
+    td.add_argument("--passcode", help="локальный код-пароль Telegram Desktop, если включён")
+    td.add_argument("--phone", help="номер, если сессия разлогинена (только для tdata с одним аккаунтом)")
     login = acc.add_parser("login", help="вход по коду (код и 2FA вводит человек)")
     login.add_argument("--phone", required=True)
     login.add_argument("--api-id", type=int)
@@ -90,6 +94,14 @@ async def _accounts(args, c) -> int:
             print(f"Ошибка: {exc}", file=sys.stderr)
             return 1
         print(f"{account.phone}: {account.status.value}")
+    elif args.cmd == "import-tdata":
+        try:
+            accounts = await c.import_tdata().execute(args.path, passcode=args.passcode, phone=args.phone)
+        except InvalidAccountPayload as exc:
+            print(f"Ошибка: {exc}", file=sys.stderr)
+            return 1
+        for account in accounts:
+            print(f"{account.phone}: {account.status.value}")
     elif args.cmd == "login":
         s = c.settings()
         api_id, api_hash = args.api_id or s.TELEGRAM_API_ID, args.api_hash or s.TELEGRAM_API_HASH

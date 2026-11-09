@@ -9,8 +9,8 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 from uuid import uuid4
 
-from radar.accounts.entities import Account, AccountStatus, Pacer, PacingPolicy
-from radar.accounts.ports import AccountRepository, DeviceProfileProvider, SecretBox, SessionProbe
+from radar.accounts.entities import Account, AccountStatus, DeviceProfile, Pacer, PacingPolicy
+from radar.accounts.ports import AccountRepository, DeviceProfileProvider, SecretBox, SessionProbe, TdataReader
 from radar.accounts.service import AccountService
 from radar.shared.clock import Clock
 
@@ -51,6 +51,9 @@ class ImportAccount:
             api_id=int(_required(data, "app_id")), api_hash=str(_required(data, "app_hash")),
         )
 
+    def device(self) -> DeviceProfile:
+        return self._devices.get(self._profile)
+
     async def from_fields(self, phone: Any, session: str, api_id: int, api_hash: str) -> Account:
         phone = _normalize_phone(phone)
         authorized = await self._probe.check(session, api_id, api_hash, self._devices.get(self._profile))
@@ -76,6 +79,27 @@ class ImportAccount:
             await self._accounts.add(account)
         logger.info("Аккаунт импортирован: %s → %s", phone, status.value)
         return account
+
+
+class ImportTdata:
+    """Папка tdata Telegram Desktop → аккаунты. Номера в tdata нет: его спрашиваем у Telegram (get_me) или берём
+    из --phone (только для tdata с одним аккаунтом). Дальше — как обычный импорт (проверка, шифрование, перелогин)."""
+
+    def __init__(self, importer: ImportAccount, reader: TdataReader, probe: SessionProbe) -> None:
+        self._importer, self._reader, self._probe = importer, reader, probe
+
+    async def execute(self, path, passcode: str | None = None, phone: str | None = None) -> list[Account]:
+        sessions = await self._reader.read(path, passcode)
+        if phone and len(sessions) > 1:
+            raise InvalidAccountPayload(f"В tdata {len(sessions)} аккаунта — --phone подходит только для одного")
+        found = []
+        for s in sessions:
+            number = phone or await self._probe.phone(s.session, s.api_id, s.api_hash, self._importer.device())
+            if not number:
+                raise InvalidAccountPayload(
+                    f"Сессия аккаунта {s.user_id or '?'} не авторизована — номер не узнать; укажите --phone")
+            found.append((number, s))
+        return [await self._importer.from_fields(number, s.session, s.api_id, s.api_hash) for number, s in found]
 
 
 class LoginAccount:

@@ -90,6 +90,7 @@ docker compose exec app radar sources import seeds/sources.txt
 
 ```
 radar accounts import FILE.json      # берутся только phone, session_str|session, app_id, app_hash
+radar accounts import-tdata ПАПКА [--passcode КОД] [--phone +7…]   # tdata Telegram Desktop
 radar accounts login --phone +7...   # интерактивный вход; 2FA не сохраняется
 radar accounts list | disable PHONE
 radar sources import seeds/sources.txt
@@ -108,3 +109,17 @@ radar llm probe gpt-4o-mini gpt-4.1-mini gpt-4o   # 6 эталонных соо�
 
 `radar accounts login --phone …` или `radar accounts import account.json` — подхватывается без перезапуска (раз в
 минуту). Бан или разлогин аккаунта — алерт в бота, его группы уходят другим аккаунтам.
+
+
+### Из tdata (Telegram Desktop)
+
+Положите папку в `./accounts/` (она смонтирована в контейнер только на чтение и не коммитится) и выполните:
+
+```
+docker compose exec app radar accounts import-tdata accounts/имя/tdata
+```
+
+Можно указать и папку аккаунта, внутри которой лежит `tdata`. Если в Telegram Desktop был включён локальный
+код-пароль — `--passcode`. Номер в tdata не хранится: его спрашиваем у Telegram (`get_me`); для разлогиненной
+сессии — `--phone`. В одной tdata бывает до 3 аккаунтов — импортируются все. Берётся та же авторизация, что
+у Telegram Desktop (api_id 2040), новая сессия не создаётся. Читает tdata библиотека `opentele`.
