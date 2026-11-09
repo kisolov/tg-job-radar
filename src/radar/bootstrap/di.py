@@ -5,6 +5,7 @@ import random
 from aiogram import Bot
 from dependency_injector import containers, providers
 
+from radar.accounts.adapters.alerts import AlertLog, TeeAlertSink
 from radar.accounts.adapters.device_profiles import DefaultDeviceProfileProvider
 from radar.accounts.adapters.fernet_box import FernetSecretBox
 from radar.accounts.adapters.session_probe import TelethonSessionProbe, interactive_login
@@ -13,6 +14,7 @@ from radar.accounts.entities import PacingPolicy
 from radar.accounts.service import AccountService
 from radar.accounts.usecases import DisableAccount, ImportAccount, ListAccounts, LoginAccount
 from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
+from radar.delivery.adapters.panel_notifier import PanelOnlyNotifier
 from radar.delivery.bot import BotDeps
 from radar.delivery.card import render_card, to_plain
 from radar.delivery.usecases import AttachCopyEdit, SetPaused
@@ -71,9 +73,18 @@ class DeliveryTrigger:
         self.event.set()
 
 
+def make_bot(settings: Settings) -> Bot | None:
+    return Bot(token=settings.BOT_TOKEN) if settings.bot_enabled else None
+
+
+def make_notifier(bot: Bot | None, settings: Settings):
+    """С ботом — карточки в личку владельцу; без бота — находки только в панели."""
+    return AiogramNotifier(bot=bot, owner_id=settings.OWNER_TELEGRAM_ID) if bot else PanelOnlyNotifier()
+
+
 def web_link_factory(settings: Settings, auth: PanelAuth):
     """Для /web: функция, выдающая одноразовую ссылку входа; None — панель выключена."""
-    if not settings.WEB_PORT:
+    if not settings.WEB_PORT or not settings.bot_enabled:
         return None
     base = settings.WEB_BASE_URL.rstrip("/")
     return lambda: f"{base}/login?t={auth.issue_login()}"
@@ -94,8 +105,11 @@ class Container(containers.DeclarativeContainer):
     resolve_policy = providers.Singleton(PacingPolicy.resolve_from_settings, settings)
 
     # delivery transport — он же канал алертов (AlertSink = тот же бот)
-    bot = providers.Singleton(Bot, token=settings.provided.BOT_TOKEN)
-    notifier = providers.Singleton(AiogramNotifier, bot=bot, owner_id=settings.provided.OWNER_TELEGRAM_ID)
+    bot = providers.Singleton(make_bot, settings)
+    notifier = providers.Singleton(make_notifier, bot, settings)
+    alert_log = providers.Singleton(AlertLog, clock=clock)
+    alerts = providers.Singleton(TeeAlertSink, log=alert_log,
+                                 inner=providers.Callable(lambda b, n: n if b else None, bot, notifier))
 
     # accounts
     secret_box = providers.Singleton(FernetSecretBox, key=settings.provided.USERBOT_STORE_KEY)
@@ -103,7 +117,7 @@ class Container(containers.DeclarativeContainer):
     session_probe = providers.Singleton(TelethonSessionProbe)
     account_repo = providers.Singleton(SqlAlchemyAccountRepository, sf=sessions)
     account_service = providers.Singleton(
-        AccountService, accounts=account_repo, alerts=notifier, clock=clock, rng=rng,
+        AccountService, accounts=account_repo, alerts=alerts, clock=clock, rng=rng,
         join_policy=join_policy, resolve_policy=resolve_policy,
     )
     import_account = providers.Factory(
@@ -136,7 +150,7 @@ class Container(containers.DeclarativeContainer):
     )
     usage_repo = providers.Singleton(SqlAlchemyUsageRepository, sf=sessions)
     requirements_repo = providers.Singleton(SqlAlchemyRequirementsRepository, sf=sessions)
-    screening_service = providers.Singleton(ScreeningService, usage=usage_repo, alerts=notifier, clock=clock)
+    screening_service = providers.Singleton(ScreeningService, usage=usage_repo, alerts=alerts, clock=clock)
     probe_model = providers.Factory(ProbeModel, classifier=classifier, requirements=requirements_repo)
 
     # findings
@@ -154,7 +168,7 @@ class Container(containers.DeclarativeContainer):
     deliver_accepted = providers.Singleton(
         DeliverAccepted, repo=finding_repo, notifier=notifier, render=providers.Object(render_card),
         paused=runtime.provided.paused, stats=usage_repo, clock=clock, plain=providers.Object(to_plain),
-        alerts=notifier,
+        alerts=alerts,
     )
     redeliver_stale = providers.Singleton(
         RedeliverStale, repo=finding_repo, clock=clock, stale_s=settings.provided.CLAIM_STALE_S)
@@ -192,14 +206,16 @@ class Container(containers.DeclarativeContainer):
 
     # panel
     panel_auth = providers.Singleton(
-        PanelAuth, secret=providers.Callable(secret_from, settings.provided.WEB_SECRET, settings.provided.BOT_TOKEN),
+        PanelAuth, secret=providers.Callable(secret_from, settings.provided.WEB_SECRET,
+                                            settings.provided.USERBOT_STORE_KEY),
         clock=clock,
     )
     panel_read_model = providers.Singleton(SqlAlchemyPanelReadModel, sf=sessions)
     panel_deps = providers.Singleton(
         PanelDeps, auth=panel_auth,
         overview=providers.Factory(GetOverview, read_model=panel_read_model, accounts=account_repo, usage=usage_repo,
-                                   runtime=runtime, clock=clock),
+                                   runtime=runtime, clock=clock, alert_log=alert_log,
+                                   bot_enabled=settings.provided.bot_enabled),
         findings=providers.Factory(ListFindings, read_model=panel_read_model, clock=clock),
         finding=providers.Factory(GetFinding, read_model=panel_read_model),
         sources=providers.Factory(ListPanelSources, read_model=panel_read_model, clock=clock),
@@ -207,6 +223,7 @@ class Container(containers.DeclarativeContainer):
         remove_source=providers.Factory(RemoveSourceById, sources=source_repo, service=source_service),
         set_paused=providers.Factory(SetPaused, runtime=runtime),
         secure_cookie=providers.Callable(lambda url: url.startswith("https://"), settings.provided.WEB_BASE_URL),
+        password=settings.provided.WEB_PASSWORD, bot_login=settings.provided.bot_enabled,
     )
 
     bot_deps = providers.Singleton(

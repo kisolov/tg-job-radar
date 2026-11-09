@@ -35,9 +35,9 @@ for (const file of readdirSync(src).filter((f) => f.endsWith(".dc.html"))) {
   const title = (html.match(/<title>([\s\S]*?)<\/title>/) || [, file])[1];
   const helmet = (html.match(/<helmet>([\s\S]*?)<\/helmet>/) || [, ""])[1];
   const body = html.match(/<x-dc>([\s\S]*?)<\/x-dc>/)[1].replace(/<helmet>[\s\S]*?<\/helmet>/, "");
-  const script = html.match(/<script type="text\/x-dc"[^>]*>([\s\S]*?)<\/script>/)[1];
-  const Component = new Function("DCLogic", `${script}; return Component;`)(DCLogic);
-  const vals = new Component().renderVals();
+  const script = (html.match(/<script type="text\/x-dc"[^>]*>([\s\S]*?)<\/script>/) || [])[1];
+  // статичный артборд (без скрипта и дыр) рендерится как есть
+  const vals = script ? new (new Function("DCLogic", `${script}; return Component;`)(DCLogic))().renderVals() : {};
   const page = expand(body, vals).replace(/href="(\w+)\.dc\.html"/g, 'href="$1.html"');
   const name = file.replace(/\.dc\.html$/, ".html");
   writeFileSync(join(out, name),

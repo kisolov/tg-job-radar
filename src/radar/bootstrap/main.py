@@ -100,18 +100,9 @@ async def serve_panel(c: Container) -> None:
         await runner.cleanup()
 
 
-async def run(c: Container) -> None:
+def build_jobs(c: Container) -> dict[str, Callable[[], Awaitable[None]]]:
+    """Задачи процесса. Без BOT_TOKEN нет задачи «bot»: находки «доставляются» в панель (PanelOnlyNotifier)."""
     s = c.settings()
-    await asyncio.to_thread(run_migrations, s.DATABASE_URL)
-    await c.runtime().load()
-    await c.source_repo().reset_resolving()
-    await c.message_log().purge_unprocessed()  # I5: перечитать то, что упало посередине
-    await c.usage_repo().reset_reserved()  # M8: резервы пакетов, умерших с прошлым процессом
-
-    dp = Dispatcher()
-    dp.include_router(build_router(s.OWNER_TELEGRAM_ID, c.bot_deps()))
-    bot = c.bot()
-
     jobs = {
         "pool": c.pool_runner().run_forever,
         "classify": c.classify_pending().run_forever,
@@ -120,10 +111,27 @@ async def run(c: Container) -> None:
         "redeliver-stale": lambda: every(60, c.redeliver_stale().execute),
         "purge-messages": lambda: every(3600, lambda: _purge_messages(c)),
         "retire-useless": lambda: every(86400, c.retire_useless().execute),
-        "bot": lambda: dp.start_polling(bot, handle_signals=False),
     }
+    bot = c.bot()
+    if bot is not None:
+        dp = Dispatcher()
+        dp.include_router(build_router(s.OWNER_TELEGRAM_ID, c.bot_deps()))
+        jobs["bot"] = lambda: dp.start_polling(bot, handle_signals=False)
     if s.WEB_PORT:
         jobs["web"] = lambda: serve_panel(c)
+    return jobs
+
+
+async def run(c: Container) -> None:
+    s = c.settings()
+    await asyncio.to_thread(run_migrations, s.DATABASE_URL)
+    await c.runtime().load()
+    await c.source_repo().reset_resolving()
+    await c.message_log().purge_unprocessed()  # I5: перечитать то, что упало посередине
+    await c.usage_repo().reset_reserved()  # M8: резервы пакетов, умерших с прошлым процессом
+
+    jobs = build_jobs(c)
+    bot = c.bot()
     tasks = [asyncio.create_task(supervise(name, job), name=name) for name, job in jobs.items()]
     logger.info("radar запущен: %s", ", ".join(jobs))
     try:
@@ -132,7 +140,8 @@ async def run(c: Container) -> None:
         for t in tasks:
             t.cancel()
         await c.pool_runner().stop()
-        await bot.session.close()
+        if bot is not None:
+            await bot.session.close()
         await c.engine().dispose()
 
 

@@ -1,4 +1,5 @@
 """HTTP панели (aiohttp): страница без сборки + JSON-ручки. Вход — только по ссылке /web из бота."""
+import asyncio
 import dataclasses
 import json
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from radar.sources.usecases import AddSource
 
 COOKIE = "radar_session"
 CSRF_HEADER = "X-Radar"
+PASSWORD_FAIL_DELAY_S = 1.0
 STATIC = Path(__file__).parent / "static"
 BAD_LINK = ("Ссылка входа недействительна или устарела. "
             "Пришлите боту /web и откройте новую ссылку в течение 10 минут.")
@@ -31,6 +33,11 @@ class PanelDeps:
     remove_source: RemoveSourceById
     set_paused: SetPaused
     secure_cookie: bool
+    password: str = ""  # вход по паролю; пусто — выключен
+    bot_login: bool = True  # вход по ссылке /web из бота
+
+
+DEPS_KEY: web.AppKey[PanelDeps] = web.AppKey("deps", PanelDeps)
 
 
 def _default(o):
@@ -61,7 +68,8 @@ def build_app(deps: PanelDeps) -> web.Application:
     async def guard(request: web.Request, handler):
         if request.path.startswith("/api/"):
             if not deps.auth.check_session(request.cookies.get(COOKIE, "")):
-                return _error(401, "нужен вход: команда /web в боте")
+                modes = [m for m, on in (("bot", deps.bot_login), ("password", bool(deps.password))) if on]
+                return _json({"error": "нужен вход", "login": modes}, 401)
             if request.method not in ("GET", "HEAD") and request.headers.get(CSRF_HEADER) != "1":
                 return _error(403, "нет заголовка X-Radar")
         try:
@@ -76,10 +84,23 @@ def build_app(deps: PanelDeps) -> web.Application:
         session = deps.auth.redeem_login(request.query.get("t", ""))
         if session is None:
             return web.Response(text=BAD_LINK, status=403)
-        resp = web.Response(status=302, headers={"Location": "/"})
+        return _with_session(web.Response(status=302, headers={"Location": "/"}), session)
+
+    def _with_session(resp: web.Response, session: str) -> web.Response:
         resp.set_cookie(COOKIE, session, max_age=SESSION_TTL_S, httponly=True, samesite="Lax",
                         secure=deps.secure_cookie, path="/")
         return resp
+
+    async def password_login(request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except ValueError:
+            body = {}
+        session = deps.auth.password_session(str(body.get("password", "")), deps.password)
+        if session is None:
+            await asyncio.sleep(PASSWORD_FAIL_DELAY_S)  # перебор пароля — медленно
+            return _error(403, "неверный пароль")
+        return _with_session(_json({"ok": True}), session)
 
     async def overview(_: web.Request) -> web.Response:
         return _json(await deps.overview.execute())
@@ -117,9 +138,11 @@ def build_app(deps: PanelDeps) -> web.Application:
         return _json({"paused": bool(body.get("paused"))})
 
     app = web.Application(middlewares=[guard])
+    app[DEPS_KEY] = deps
     app.add_routes([
         web.get("/", index),
         web.get("/login", login),
+        web.post("/login", password_login),
         web.static("/static", STATIC),
         web.get("/api/overview", overview),
         web.get("/api/findings", findings),

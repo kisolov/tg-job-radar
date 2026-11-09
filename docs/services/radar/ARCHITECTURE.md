@@ -73,9 +73,13 @@
 `POST /api/delivery {paused}`. Статус источника на экране вычисляется: `active` и (канал или вступили) → «читается»,
 `active` группа без вступления → «ждёт вступления», `candidate`/`resolving` → «ждёт резолва».
 
+Режим без бота (`BOT_TOKEN` пуст): `PanelOnlyNotifier` — находка сразу `delivered` («Принята» на экране), вход по
+`WEB_PASSWORD` (`POST /login`), алерты — `AlertLog` → «Алерты» на «Обзоре». С ботом `TeeAlertSink` пишет алерт и в
+Telegram, и в журнал панели.
+
 Вход: `/web` → `WEB_BASE_URL/login?t=<login.exp.nonce.hmac>` (10 мин, одноразово — nonce в памяти процесса) →
 cookie `radar_session` (HMAC, 30 дней, HttpOnly, SameSite=Lax, Secure при https). Секрет — `WEB_SECRET` или sha256 от
-`BOT_TOKEN`. Изменяющие запросы требуют `X-Radar: 1`.
+`USERBOT_STORE_KEY`. Изменяющие запросы требуют `X-Radar: 1`.
 
 ### findings
 

@@ -8,7 +8,7 @@ from radar.delivery.usecases import SetPaused
 from radar.panel.auth import PanelAuth
 from radar.panel.ports import FindingDetail, FindingRow
 from radar.panel.usecases import GetFinding, GetOverview, ListFindings, ListPanelSources, RemoveSourceById
-from radar.panel.web import COOKIE, PanelDeps, build_app
+from radar.panel.web import COOKIE, DEPS_KEY, PanelDeps, build_app
 from radar.screening.adapters.memory_repos import InMemoryUsageRepository
 from radar.shared.clock import FakeClock
 from radar.sources.adapters.memory_repo import InMemorySourceRepository
@@ -40,7 +40,7 @@ async def env():
         auth=auth, overview=GetOverview(rm, accounts, InMemoryUsageRepository(), rt, clock),
         findings=ListFindings(rm, clock), finding=GetFinding(rm), sources=ListPanelSources(rm, clock),
         add_source=AddSource(service), remove_source=RemoveSourceById(sources, service),
-        set_paused=SetPaused(rt), secure_cookie=False,
+        set_paused=SetPaused(rt), secure_cookie=False, password="pass-123", bot_login=True,
     )
     client = TestClient(TestServer(build_app(deps)))
     await client.start_server()
@@ -115,3 +115,22 @@ async def test_sources_endpoint(env):
 
 def test_now_is_utc():
     assert datetime.now(UTC).tzinfo is UTC
+
+
+async def test_password_login_sets_session(env):
+    client, *_ = env
+    r = await client.get("/api/overview")
+    assert r.status == 401 and set((await r.json())["login"]) == {"bot", "password"}
+    bad = await client.post("/login", json={"password": "nope"}, allow_redirects=False)
+    assert bad.status == 403 and COOKIE not in bad.cookies
+    ok = await client.post("/login", json={"password": "pass-123"}, allow_redirects=False)
+    assert ok.status == 200 and COOKIE in ok.cookies
+    assert (await client.get("/api/overview")).status == 200
+
+
+async def test_password_login_disabled_without_password(env):
+    client, *_ = env
+    client.server.app[DEPS_KEY].password = ""
+    r = await client.post("/login", json={"password": ""}, allow_redirects=False)
+    assert r.status == 403
+    assert (await (await client.get("/api/overview")).json())["login"] == ["bot"]

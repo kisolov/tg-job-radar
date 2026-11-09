@@ -1,8 +1,9 @@
 """Операции панели. Чтение — модель чтения + уже существующие репозитории; запись — через сервисы модулей."""
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
+from radar.accounts.adapters.alerts import Alert, AlertLog
 from radar.accounts.ports import AccountRepository
 from radar.panel.ports import (
     FINDING_TABS,
@@ -25,6 +26,7 @@ from radar.sources.service import SourceService
 
 PAGE = 20
 RECENT = 4
+ALERTS_SHOWN = 10
 WEEK_DAYS = 7
 PERIODS = {"today": None, "7d": timedelta(days=7), "30d": timedelta(days=30), "all": None}
 KINDS = (None, "vacancy", "project")
@@ -92,12 +94,16 @@ class Overview:
     week: list[DayBar]
     recent: list[FindingRow]
     sources: SourceCounts
+    bot: bool = True
+    alerts: list[Alert] = field(default_factory=list)
 
 
 class GetOverview:
     def __init__(self, read_model: PanelReadModel, accounts: AccountRepository, usage: UsageRepository,
-                 runtime: RuntimeConfig, clock: Clock) -> None:
+                 runtime: RuntimeConfig, clock: Clock, alert_log: AlertLog | None = None,
+                 bot_enabled: bool = True) -> None:
         self._rm, self._accounts, self._usage, self._runtime, self._clock = read_model, accounts, usage, runtime, clock
+        self._alert_log, self._bot = alert_log, bot_enabled
 
     async def execute(self) -> Overview:
         now = self._clock.now()
@@ -127,6 +133,8 @@ class GetOverview:
             week=[DayBar(d, by_day.get(d, 0)) for d in days],
             recent=await self._rm.recent_delivered(RECENT),
             sources=await self._rm.source_counts(now - timedelta(days=7)),
+            bot=self._bot,
+            alerts=self._alert_log.recent()[:ALERTS_SHOWN] if self._alert_log else [],
         )
 
 

@@ -152,3 +152,6 @@ dd { margin: 0; overflow-wrap: anywhere; }
   dd { margin-bottom: 8px; }
   .detail { position: static; }
 }
+
+.alerts { border-color: var(--warn-bg); background: #FFFBF5; gap: 8px; padding: 14px 18px; }
+.alerts ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }

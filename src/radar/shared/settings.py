@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 CsvList = Annotated[list[str], NoDecode]
@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     DATABASE_URL: str
-    OWNER_TELEGRAM_ID: int
-    BOT_TOKEN: str
+    OWNER_TELEGRAM_ID: int = 0  # нужен, только если есть бот
+    BOT_TOKEN: str = ""  # пусто — режим «только панель»
     USERBOT_STORE_KEY: str
     TELEGRAM_API_ID: int | None = None
     TELEGRAM_API_HASH: str | None = None
@@ -72,7 +72,23 @@ class Settings(BaseSettings):
     WEB_HOST: str = "127.0.0.1"
     WEB_PORT: int = 8080  # 0 — панель выключена
     WEB_BASE_URL: str = "http://localhost:8080"  # адрес, который бот вставляет в ссылку /web
-    WEB_SECRET: str = ""  # пусто — выводится из BOT_TOKEN
+    WEB_SECRET: str = ""  # пусто — выводится из USERBOT_STORE_KEY
+    WEB_PASSWORD: str = ""  # вход в панель по паролю; без бота обязателен
+
+    @property
+    def bot_enabled(self) -> bool:
+        return bool(self.BOT_TOKEN)
+
+    @model_validator(mode="after")
+    def _delivery_channel(self) -> "Settings":
+        if self.BOT_TOKEN and not self.OWNER_TELEGRAM_ID:
+            raise ValueError("С ботом нужен OWNER_TELEGRAM_ID — кому слать находки")
+        if not self.BOT_TOKEN:
+            if not self.WEB_PORT:
+                raise ValueError("Без бота нужна веб-панель: WEB_PORT не может быть 0")
+            if not self.WEB_PASSWORD:
+                raise ValueError("Без бота вход в панель только по паролю: задайте WEB_PASSWORD")
+        return self
 
     @field_validator("PREFILTER_MARKERS", "PREFILTER_STOPWORDS", "AGGREGATOR_DOMAINS", mode="before")
     @classmethod

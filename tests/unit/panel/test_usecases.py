@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
+from radar.accounts.adapters.alerts import AlertLog, TeeAlertSink
 from radar.accounts.adapters.memory_repo import InMemoryAccountRepository
 from radar.accounts.entities import AccountStatus
 from radar.panel.ports import (
@@ -94,7 +95,10 @@ async def test_overview_composes_everything():
     rt = runtime()
     await rt.set_paused(True)
 
-    o = await GetOverview(rm, accounts, usage, rt, FakeClock(NOW)).execute()
+    log = AlertLog(FakeClock(NOW))
+    await TeeAlertSink(log).notify("⚠️ LLM недоступен 61 мин")
+    o = await GetOverview(rm, accounts, usage, rt, FakeClock(NOW), alert_log=log, bot_enabled=False).execute()
+    assert o.bot is False and [(a.at, a.text) for a in o.alerts] == [(NOW, "⚠️ LLM недоступен 61 мин")]
 
     assert o.day == date(2026, 11, 6) and o.paused is True
     assert ("day", datetime(2026, 11, 6, tzinfo=UTC), datetime(2026, 11, 7, tzinfo=UTC)) in rm.calls

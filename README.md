@@ -53,7 +53,9 @@ docker compose exec app radar sources import seeds/sources.txt
 | `MESSAGES_RETENTION_DAYS` | 7 | сколько помнить виденные сообщения |
 | `WEB_PORT` / `WEB_HOST` | 8080 / 127.0.0.1 | веб-панель; `WEB_PORT=0` — выключить |
 | `WEB_BASE_URL` | http://localhost:8080 | адрес панели в ссылке `/web` (https → cookie с Secure) |
-| `WEB_SECRET` | пусто | ключ подписи входа; пусто — выводится из `BOT_TOKEN` |
+| `WEB_SECRET` | пусто | ключ подписи входа; пусто — выводится из `USERBOT_STORE_KEY` |
+| `WEB_PASSWORD` | пусто | вход в панель по паролю; без бота обязателен |
+| `BOT_TOKEN` / `OWNER_TELEGRAM_ID` | пусто | бот необязателен: без него находки копятся только в панели |
 
 ## Бот (только владелец, остальным — тишина)
 
@@ -68,10 +70,17 @@ docker compose exec app radar sources import seeds/sources.txt
 | `/web` | одноразовая ссылка входа в веб-панель (10 минут) |
 | `/set KEY VALUE` | на ходу: `LLM_BATCH_SIZE`, `LLM_BATCH_WAIT_S`, `LLM_MAX_CHARS`, `LLM_DAILY_TOKEN_LIMIT`, `NEUROAPI_MODEL`, `PREFILTER_MIN_LEN` |
 
+## Режим без бота
+
+Если `BOT_TOKEN` пуст, бот не запускается: находки сразу отмечаются принятыми и смотрятся в веб-панели
+(«Находки»), алерты — блоком «Алерты» на «Обзоре» (последние 50, в памяти процесса). Вход — по `WEB_PASSWORD`.
+Мгновенных уведомлений в Telegram в этом режиме нет.
+
 ## Веб-панель
 
 Обзор (парсеры, конвейер за сутки, LLM, находки за 7 дней), все находки с решением LLM и текстом, источники
-с добавлением и удалением. Вход — команда `/web` в боте: ссылка одноразовая, дальше cookie на 30 дней.
+с добавлением и удалением. Вход — команда `/web` в боте (ссылка одноразовая) или пароль `WEB_PASSWORD`;
+дальше cookie на 30 дней.
 
 В compose панель слушает `127.0.0.1:8080` хоста. На VPS удобнее всего SSH-туннель: `ssh -L 8080:localhost:8080 vps`,
 `WEB_BASE_URL=http://localhost:8080`. Для доступа из интернета — reverse-proxy с TLS перед портом и

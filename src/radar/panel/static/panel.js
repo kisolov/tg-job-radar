@@ -60,7 +60,9 @@ function setParams(path, params) {
 }
 
 // ---------- API ----------
-class AuthError extends Error {}
+class AuthError extends Error {
+  constructor(modes) { super("нужен вход"); this.modes = modes || ["bot"]; }
+}
 async function api(path, opts = {}) {
   const init = { credentials: "same-origin", ...opts, headers: { ...(opts.headers || {}) } };
   if (init.method && init.method !== "GET") {
@@ -68,19 +70,28 @@ async function api(path, opts = {}) {
     if (init.body !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(init.body); }
   }
   const r = await fetch(path, init);
-  if (r.status === 401) throw new AuthError();
   const body = await r.json().catch(() => ({}));
+  if (r.status === 401) throw new AuthError(body.login);
   if (!r.ok) throw new Error(body.error || "Ошибка " + r.status);
   return body;
 }
 
 // ---------- шапка ----------
 let paused = null;
+let botOn = true;
 function renderHeader(o) {
   paused = o.paused;
+  botOn = o.bot;
   const pill = document.getElementById("delivery-pill");
   const btn = document.getElementById("pause-btn");
-  pill.hidden = btn.hidden = false;
+  pill.hidden = false;
+  btn.hidden = !botOn;
+  document.getElementById("updated").textContent = "обновлено " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  if (!botOn) {
+    pill.className = "pill big off";
+    pill.textContent = "Бот выключен — находки только здесь";
+    return;
+  }
   pill.className = "pill big " + (paused ? "warn" : "ok");
   pill.innerHTML = `<svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"></circle></svg>${paused ? "Доставка на паузе" : "Доставка идёт"}`;
   btn.textContent = paused ? "Возобновить доставку" : "Поставить на паузу";
@@ -121,12 +132,12 @@ function renderOverview(o) {
     ["Прошло предфильтр", n(st.passed_prefilter), `${pct(st.passed_prefilter, st.read)} прочитанного`],
     ["Уникальных (без дублей)", n(c.unique), `${n(Math.max(0, c.copies - c.unique))} копий склеено`],
     ["Ушло в LLM", n(st.llm_items), `${n(st.requests)} ${plural(st.requests, "пакет", "пакета", "пакетов")}`],
-    ["Находок доставлено", n(c.delivered), c.queued ? `ещё ${n(c.queued)} ждёт отправки` : "очередь пуста"],
+    [o.bot ? "Находок доставлено" : "Находок принято", n(c.delivered), c.queued ? `ещё ${n(c.queued)} ждёт ${o.bot ? "отправки" : "обработки"}` : "очередь пуста"],
     ["Стоимость LLM", "≈ " + nf2.format(o.cost), `${tokens(totalTokens)} токенов`],
   ];
   const funnel = [
     ["Прочитано", st.read], ["Прошло предфильтр", st.passed_prefilter], ["Уникальных", c.unique],
-    ["Классифицировано", st.llm_items], ["Подошло", c.accepted], ["Доставлено", c.delivered],
+    ["Классифицировано", st.llm_items], ["Подошло", c.accepted], [o.bot ? "Доставлено" : "Принято", c.delivered],
   ];
   const top = Math.max(1, ...funnel.map((f) => f[1]));
   const weekMax = Math.max(1, ...o.week.map((d) => d.n));
@@ -158,7 +169,9 @@ function renderOverview(o) {
         r.copies > 1 ? `ещё в ${r.copies - 1} ${plural(r.copies - 1, "чате", "чатах", "чатах")}` : ""].filter(Boolean).join(" · "))}</span>
     </a>`).join("") || `<span class="muted">Пока ничего не доставлено.</span>`;
 
+  const alerts = (o.alerts || []).map((a) => `<li><span class="muted small">${esc(when(a.at))}</span> ${esc(a.text)}</li>`).join("");
   view.innerHTML = `
+    ${alerts ? `<section class="card alerts" aria-label="Алерты"><h2>Алерты</h2><ul>${alerts}</ul></section>` : ""}
     <div class="head"><h1>Сегодня</h1><span class="muted">${esc(dayMonth(o.day))}, сутки UTC</span></div>
     <section aria-label="Показатели за сутки" class="grid-kpi">
       ${kpis.map(([l, v, h]) => `<div class="kpi"><span class="l">${l}</span><span class="v">${v}</span><span class="h">${esc(h)}</span></div>`).join("")}
@@ -166,7 +179,7 @@ function renderOverview(o) {
     <div class="cols">
       <div class="col-main">
         <section class="card">
-          <div class="card-head"><h2>Конвейер за сутки</h2><span class="muted small">от прочитанного до карточки в боте</span></div>
+          <div class="card-head"><h2>Конвейер за сутки</h2><span class="muted small">${o.bot ? "от прочитанного до карточки в боте" : "от прочитанного до находки в панели"}</span></div>
           <div class="funnel">
             ${funnel.map(([l, v]) => `<div class="funnel-row"><span class="lab">${l}</span><div class="track"><div style="width:${v ? Math.max(1, Math.sqrt(v / top) * 100) : 0}%"></div></div><span class="num">${n(v)}</span></div>`).join("")}
           </div>
@@ -179,7 +192,7 @@ function renderOverview(o) {
             : `<div class="empty">Аккаунтов нет. Добавьте: <span class="mono">radar accounts login +7…</span></div>`}
         </section>
         <section class="card">
-          <div class="card-head"><h2>Находки за 7 дней</h2><span class="muted small">доставлено в бота по дням</span></div>
+          <div class="card-head"><h2>Находки за 7 дней</h2><span class="muted small">${o.bot ? "доставлено в бота" : "принято"} по дням</span></div>
           <div class="week">
             ${o.week.map((d) => `<div class="d"><span class="n">${n(d.n)}</span><div class="bar" style="height:${Math.max(2, Math.round((d.n / weekMax) * 120))}px"></div><span class="day">${esc(new Date(d.day).toLocaleDateString("ru-RU", { day: "numeric", month: "numeric", timeZone: "UTC" }))}</span></div>`).join("")}
           </div>
@@ -219,11 +232,16 @@ const F_STATUS = {
   accepted: ["В очереди доставки", "info"], delivering: ["В очереди доставки", "info"],
   failed: ["Не обработана", "bad"],
 };
-const F_TABS = [["all", "Все"], ["delivered", "Доставлены"], ["queue", "В очереди"], ["pending", "Ждут LLM"], ["rejected", "Отклонены"]];
+const F_TABS = () => [["all", "Все"], ["delivered", botOn ? "Доставлены" : "Приняты"], ["queue", "В очереди"], ["pending", "Ждут LLM"], ["rejected", "Отклонены"]];
 let findingsState = { key: "", items: [], page: 1, total: 0 };
 
+function statusOf(status) {
+  if (status === "delivered" && !botOn) return ["Принята", "ok"];  // без бота «доставка» — это сама панель
+  return F_STATUS[status] || [status, "off"];
+}
+
 function findingItem(f, selected) {
-  const [label, cls] = F_STATUS[f.status] || [f.status, "off"];
+  const [label, cls] = statusOf(f.status);
   const more = f.copies > 1 ? `ещё в ${f.copies - 1} ${plural(f.copies - 1, "чате", "чатах", "чатах")}` : "";
   return `<button type="button" class="item" data-id="${f.id}" aria-current="${selected ? "true" : "false"}">
     <span class="meta">${kindTag(f.kind)}<span class="pill tag ${cls}">${label}</span><span>${esc(when(f.created_at))} · ${esc(f.source_title || "—")}</span><span style="margin-left:auto">${more}</span></span>
@@ -252,7 +270,7 @@ async function renderFindings(params) {
         <input type="search" name="q" value="${esc(p.q)}" placeholder="Поиск: fastapi, бот, @контакт…">
       </label>
       <div role="group" aria-label="Решение" class="seg">
-        ${F_TABS.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${p.tab === k}">${l} <span class="c">${n(st.tabs[k])}</span></button>`).join("")}
+        ${F_TABS().map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${p.tab === k}">${l} <span class="c">${n(st.tabs[k])}</span></button>`).join("")}
       </div>
       <label class="field">Тип <select name="kind">
         ${[["", "Все"], ["vacancy", "Вакансии"], ["project", "Проекты"]].map(([v, l]) => `<option value="${v}"${p.kind === v ? " selected" : ""}>${l}</option>`).join("")}
@@ -303,8 +321,8 @@ async function renderDetail(id) {
   catch (err) { if (err instanceof AuthError) throw err; box.innerHTML = `<p class="muted" style="margin:0">${esc(err.message)}</p>`; return; }
   document.querySelectorAll(".item").forEach((el) => el.setAttribute("aria-current", el.dataset.id === String(id) ? "true" : "false"));
   const r = d.row;
-  const [label, cls] = F_STATUS[r.status] || [r.status, "off"];
-  const statusText = r.status === "delivered" && r.delivered_at ? "Доставлена в бота " + when(r.delivered_at) : label;
+  const [label, cls] = statusOf(r.status);
+  const statusText = r.status === "delivered" && r.delivered_at && botOn ? "Доставлена в бота " + when(r.delivered_at) : label;
   const contact = contactOf(r, d.sender_username);
   const href = contactHref(contact);
   const others = d.copies.slice(1);
@@ -420,14 +438,31 @@ async function renderSources(params) {
 }
 
 // ---------- роутинг ----------
-function showLogin() {
+function showLogin(modes = ["bot"]) {
   document.getElementById("delivery-pill").hidden = document.getElementById("pause-btn").hidden = true;
-  view.innerHTML = `<div class="empty" style="max-width:520px;margin:48px auto;display:flex;flex-direction:column;gap:8px">
+  const pass = modes.includes("password");
+  view.innerHTML = `<div class="empty" style="max-width:520px;margin:48px auto;display:flex;flex-direction:column;gap:12px;text-align:left">
     <h1 style="font-size:20px;color:var(--ink)">Нужен вход</h1>
-    <span>Пришлите боту команду <span class="mono">/web</span> и откройте ссылку из ответа. Ссылка одноразовая и живёт 10 минут.</span></div>`;
+    ${pass ? `<form id="pw-form" style="display:flex;gap:8px;flex-wrap:wrap">
+      <label style="flex:1 1 220px;display:flex"><span class="sr">Пароль панели</span>
+        <input class="text" type="password" name="password" placeholder="Пароль (WEB_PASSWORD)" autocomplete="current-password" required></label>
+      <button type="submit" class="btn primary">Войти</button></form>
+      <span id="pw-error" class="small" style="color:var(--bad-fg)" hidden>Неверный пароль</span>` : ""}
+    ${modes.includes("bot") ? `<span>${pass ? "Или пришлите" : "Пришлите"} боту команду <span class="mono">/web</span> и откройте ссылку из ответа. Ссылка одноразовая и живёт 10 минут.</span>` : ""}
+  </div>`;
+  const form = document.getElementById("pw-form");
+  if (form) {
+    form.password.focus();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await fetch("/login", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: form.password.value }) });
+      if (r.ok) route(); else { document.getElementById("pw-error").hidden = false; form.password.select(); }
+    });
+  }
 }
 function handleError(err) {
-  if (err instanceof AuthError) showLogin();
+  if (err instanceof AuthError) showLogin(err.modes);
   else toast(err.message || "Что-то пошло не так");
 }
 
@@ -447,7 +482,7 @@ async function route() {
       if (name === "findings") await renderFindings(params); else await renderSources(params);
     }
   } catch (err) {
-    if (err instanceof AuthError) showLogin();
+    if (err instanceof AuthError) showLogin(err.modes);
     else view.innerHTML = `<div class="empty">Не удалось загрузить: ${esc(err.message)}. <button type="button" class="btn sm" onclick="route()">Повторить</button></div>`;
   } finally { busy = false; }
 }
@@ -459,6 +494,6 @@ setInterval(async () => {
   try {
     if (path === "/" || path === "") renderOverview(await refreshHeader());
     else await refreshHeader();
-  } catch (err) { if (err instanceof AuthError) showLogin(); }
+  } catch (err) { if (err instanceof AuthError) showLogin(err.modes); }
 }, REFRESH_MS);
 route();

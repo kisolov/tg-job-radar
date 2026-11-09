@@ -11,9 +11,12 @@ from radar.shared.settings import Settings
 from tests.unit.shared.test_settings import MIN_ENV
 
 
+VALID = {"BOT_TOKEN": "42:TESTTOKEN", "USERBOT_STORE_KEY": "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="}
+
+
 def container(**env) -> Container:
     c = Container()
-    c.settings.override(providers.Object(Settings(_env_file=None, **{**MIN_ENV, **env})))
+    c.settings.override(providers.Object(Settings(_env_file=None, **{**MIN_ENV, **VALID, **env})))
     return c
 
 
@@ -57,3 +60,30 @@ async def test_serve_panel_answers_http():
         task.cancel()
         await asyncio.gather(task, return_exceptions=True)
         await c.engine().dispose()
+
+
+NO_BOT = {"BOT_TOKEN": "", "OWNER_TELEGRAM_ID": 0, "WEB_PASSWORD": "pass-123"}
+
+
+async def test_without_bot_findings_go_to_panel_and_alerts_are_kept():
+    from radar.bootstrap.main import build_jobs
+    from radar.delivery.adapters.panel_notifier import PanelOnlyNotifier
+
+    c = container(**NO_BOT)
+    assert c.bot() is None and isinstance(c.notifier(), PanelOnlyNotifier)
+    assert await c.notifier().send("<b>карточка</b>") > 0
+    await c.alerts().notify("⚠️ тест")
+    assert [a.text for a in c.alert_log().recent()] == ["⚠️ тест"]
+    jobs = build_jobs(c)
+    assert "bot" not in jobs and {"deliver", "web", "pool", "classify"} <= set(jobs)
+    await c.engine().dispose()
+
+
+async def test_with_bot_alerts_go_to_both():
+    from radar.bootstrap.main import build_jobs
+    from radar.delivery.adapters.aiogram_notifier import AiogramNotifier
+
+    c = container()
+    assert isinstance(c.notifier(), AiogramNotifier) and "bot" in build_jobs(c)
+    await c.bot().session.close()
+    await c.engine().dispose()

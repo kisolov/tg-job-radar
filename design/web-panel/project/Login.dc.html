@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вход — tg-job-radar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FD1;text-decoration:none}a:hover{color:#16479E;text-decoration:underline}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; color: #14171C; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E1E4EA">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5FD1" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><path d="M12 12 19 6"></path></svg>
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">tg-job-radar</span>
+      </div>
+      <nav aria-label="Разделы" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Обзор</a>
+        <a href="Findings.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Находки</a>
+        <a href="Sources.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3D4552; font-weight: 500">Источники</a>
+      </nav>
+      </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 24px">
+    <section aria-label="Вход" style="width: 100%; max-width: 520px; background: #FFFFFF; border: 1px dashed #C9CED8; border-radius: 12px; padding: 32px; display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 700">Нужен вход</h1>
+      <form style="display: flex; flex-wrap: wrap; gap: 8px">
+        <label style="flex: 1 1 220px; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Пароль панели</span>
+          <input type="password" placeholder="Пароль (WEB_PASSWORD)" style="flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border: 1px solid #C9CED8; border-radius: 8px; font: inherit"></label>
+        <button type="submit" style="min-height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #1F5FD1; color: #FFFFFF; font: inherit; font-weight: 600">Войти</button>
+      </form>
+      <span style="color: #5B6370">Или пришлите боту команду <span style="font-family: 'JetBrains Mono', ui-monospace, monospace">/web</span> и откройте ссылку из ответа (если бот включён).</span>
+    </section>
+    <p style="max-width: 520px; margin: 0; color: #5B6370; font-size: 13px">Без бота в шапке вместо «Доставка идёт» — «Бот выключен — находки только здесь», кнопки паузы нет; находки — «Приняты»; на «Обзоре» сверху блок «Алерты».</p>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

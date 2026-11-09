@@ -10,11 +10,11 @@ LOGIN_TTL_S = 600
 SESSION_TTL_S = 30 * 86400
 
 
-def secret_from(web_secret: str, bot_token: str) -> bytes:
-    """Явный WEB_SECRET, иначе производный от токена бота (смена токена разлогинивает)."""
+def secret_from(web_secret: str, fallback: str) -> bytes:
+    """Явный WEB_SECRET, иначе производный от USERBOT_STORE_KEY (есть всегда, и с ботом, и без)."""
     if web_secret:
         return web_secret.encode()
-    return hashlib.sha256(b"radar-panel:" + bot_token.encode()).digest()
+    return hashlib.sha256(b"radar-panel:" + fallback.encode()).digest()
 
 
 class PanelAuth:
@@ -58,6 +58,12 @@ class PanelAuth:
         if nonce in self._used:
             return None
         self._used[nonce] = exp
+        return self._make("session", self._session_ttl)
+
+    def password_session(self, given: str, expected: str) -> str | None:
+        """Вход по WEB_PASSWORD (режим без бота). Пустой пароль в настройках — вход выключен."""
+        if not expected or not hmac.compare_digest(given.encode(), expected.encode()):
+            return None
         return self._make("session", self._session_ttl)
 
     def check_session(self, value: str) -> bool:
