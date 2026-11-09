@@ -4,4 +4,4 @@
 __pycache__/
 .superpowers/
 # сессии аккаунтов — секреты, не коммитить
-accounts/
+/accounts/
