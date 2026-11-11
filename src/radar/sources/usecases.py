@@ -102,13 +102,13 @@ class DiscoverFromMessage:
 
 
 class RetireUseless:
-    """Раз в сутки: вступленные группы без пользы за 14 суток снимаются (слот освобождает воркер после выхода)."""
+    """Источник без находок после RETIRE_AFTER_READ прочитанных сообщений снимается с чтения."""
 
-    def __init__(self, service: SourceService, clock: Clock) -> None:
-        self._service, self._clock = service, clock
+    def __init__(self, service: SourceService, min_read: int = 100) -> None:
+        self._service, self._min_read = service, min_read
 
     async def execute(self) -> int:
-        return await self._service.retire_useless(self._clock.now())
+        return await self._service.retire_useless(self._min_read)
 
 
 class ReleaseAccountSources:

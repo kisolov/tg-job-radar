@@ -57,8 +57,9 @@ class SourceRepository(Protocol):
     async def bump_counts(self, source_id: int, read: int, passed: int) -> None:
         """Счётчики прочитанных и прошедших предфильтр сообщений источника."""
 
-    async def useless(self, activated_before, min_read: int) -> list[Source]:
-        """Вступленные active-группы старше окна: ни одной находки, ни одного прошедшего предфильтр, прочитано ≥ min_read."""
+    async def unproductive(self, min_read: int) -> list[Source]:
+        """active-источники (каналы и группы), прочитавшие ≥ min_read сообщений без единой находки.
+        Добавленные владельцем не входят — их он снимает сам."""
 
     async def eviction_candidate(self, activated_before) -> Source | None:
         """Вступленная active-группа старше окна без находок (наименее полезная) — кандидат на вытеснение."""

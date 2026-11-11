@@ -220,9 +220,9 @@ class SqlAlchemySourceRepository:
         return (t.c.status == SourceStatus.active.value, t.c.kind == SourceKind.group.value, t.c.joined.is_(True),
                 t.c.assigned_account_id.is_not(None), t.c.activated_at < activated_before)
 
-    async def useless(self, activated_before, min_read: int) -> list[Source]:
-        return await self._select(*self._joined_active_groups(activated_before), t.c.found_count == 0,
-                                  t.c.passed_count == 0, t.c.read_count >= min_read, order=(t.c.id,))
+    async def unproductive(self, min_read: int) -> list[Source]:
+        return await self._select(t.c.status == SourceStatus.active.value, t.c.found_count == 0,
+                                  t.c.read_count >= min_read, t.c.added_by != "owner", order=(t.c.id,))
 
     async def eviction_candidate(self, activated_before) -> Source | None:
         rows = await self._select(*self._joined_active_groups(activated_before), t.c.found_count == 0,

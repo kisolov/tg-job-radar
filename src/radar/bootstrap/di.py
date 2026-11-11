@@ -143,7 +143,8 @@ class Container(containers.DeclarativeContainer):
     import_seeds = providers.Factory(ImportSeeds, service=source_service)
     assign_work = providers.Singleton(AssignWork, service=source_service, clock=clock)
     discover = providers.Singleton(DiscoverFromMessage, service=source_service)
-    retire_useless = providers.Singleton(RetireUseless, service=source_service, clock=clock)
+    retire_useless = providers.Singleton(RetireUseless, service=source_service,
+                                         min_read=settings.provided.RETIRE_AFTER_READ)
     release_account_sources = providers.Singleton(ReleaseAccountSources, service=source_service)
 
     # screening

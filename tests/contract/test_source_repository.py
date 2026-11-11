@@ -204,9 +204,12 @@ async def test_usefulness_queries(source_repo, account_repo_shared):
         made.append(s)
     got = await source_repo.get(made[0].id)
     assert (got.read_count, got.passed_count, got.activated_at) == (150, 0, t0)
-    useless = await source_repo.useless(activated_before=t0 + timedelta(days=1), min_read=100)
-    assert [s.id for s in useless] == [made[0].id]
-    assert await source_repo.useless(activated_before=t0, min_read=100) == []  # ещё не прошло окно
+    # (150,0,0) и (150,3,0) — без находок; (50,0,0) мало прочитано; (150,0,2) — с находками
+    assert [s.id for s in await source_repo.unproductive(min_read=100)] == [made[0].id, made[1].id]
+    owner = await source_repo.add_candidate("my_grp_x", "owner", 10)
+    await source_repo.set_resolved(owner.id, 99, 1, SourceKind.channel, "m", at=t0)
+    await source_repo.bump_counts(owner.id, read=500, passed=0)
+    assert owner.id not in [s.id for s in await source_repo.unproductive(min_read=100)]
     cand = await source_repo.eviction_candidate(activated_before=t0 + timedelta(days=1))
     assert cand.id in {made[0].id, made[1].id, made[2].id}  # только с found_count == 0
     await source_repo.mark(made[0].id, SourceStatus.rejected)

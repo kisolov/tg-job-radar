@@ -14,7 +14,7 @@ from radar.sources.ports import SourceRepository
 ASSIGN_BATCH = 1000
 GONE = (AccountStatus.banned, AccountStatus.unauthorized, AccountStatus.disabled)  # хэши таких не оживут
 USEFULNESS_WINDOW = timedelta(days=14)
-USELESS_MIN_READ = 100
+RETIRE_AFTER_READ = 100
 RELAY_MIN_SAMPLE = 20
 RELAY_SHARE = 0.5
 TOPIC_WORDS = [
@@ -69,8 +69,9 @@ class SourceService:
             await self._sources.release(source_id)
         await self._sources.mark(source_id, SourceStatus.rejected)
 
-    async def retire_useless(self, now: datetime) -> int:
-        useless = await self._sources.useless(now - USEFULNESS_WINDOW, USELESS_MIN_READ)
+    async def retire_useless(self, min_read: int = RETIRE_AFTER_READ) -> int:
+        """Прочитал min_read сообщений и ни одной находки — снять с чтения (группу аккаунт покинет сам)."""
+        useless = await self._sources.unproductive(min_read)
         for s in useless:
             await self.retire(s.id)
         return len(useless)

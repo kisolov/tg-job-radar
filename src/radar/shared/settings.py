@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     THROTTLE_RECOVERY_DAYS: int = 3
     MEMBERSHIP_CAP: int = 500
     CHANNEL_POLL_INTERVAL_S: int = 300
+    RETIRE_AFTER_READ: int = 100  # прочитано столько без единой находки — источник снимается
 
     NEUROAPI_BASE_URL: str
     NEUROAPI_KEY: str

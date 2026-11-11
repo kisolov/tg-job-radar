@@ -18,6 +18,7 @@ Sleep = Callable[[float], Awaitable[None]]
 BACKOFF_START_S = 5
 BACKOFF_MAX_S = 300
 DELIVER_FALLBACK_S = 30
+RETIRE_CHECK_S = 600
 
 
 async def supervise(name: str, factory: Callable[[], Awaitable[None]], sleep: Sleep = asyncio.sleep,
@@ -111,7 +112,7 @@ def build_jobs(c: Container) -> dict[str, Callable[[], Awaitable[None]]]:
         "copy-edit": lambda: _copy_edit_loop(c),
         "redeliver-stale": lambda: every(60, c.redeliver_stale().execute),
         "purge-messages": lambda: every(3600, lambda: _purge_messages(c)),
-        "retire-useless": lambda: every(86400, c.retire_useless().execute),
+        "retire-useless": lambda: every(RETIRE_CHECK_S, c.retire_useless().execute),
     }
     bot = c.bot()
     if bot is not None:

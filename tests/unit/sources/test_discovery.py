@@ -78,23 +78,33 @@ async def _joined_group(sources, accounts, ref, peer, account, at):
     return s
 
 
-async def test_useless_group_released_after_14_days(clock):
+async def test_source_without_findings_after_100_messages_is_retired(clock):
+    """100 прочитанных сообщений без единой находки — источник снимается с чтения (канал и группа одинаково)."""
     accounts, sources, svc = setup()
     a = make_account()
     await accounts.add(a)
     t0 = clock.now()
-    dull = await _joined_group(sources, accounts, "dull_chat", 1, a, t0)
-    busy = await _joined_group(sources, accounts, "busy_chat", 2, a, t0)
-    young = await _joined_group(sources, accounts, "young_chat", 3, a, t0 + timedelta(days=10))
-    await sources.bump_counts(dull.id, read=150, passed=0)
-    await sources.bump_counts(busy.id, read=150, passed=4)
-    await sources.bump_counts(young.id, read=150, passed=0)
-    clock.advance(timedelta(days=15).total_seconds())
-    assert await RetireUseless(svc, clock).execute() == 1
-    assert (await sources.get(dull.id)).status is SourceStatus.rejected
-    assert [s.id for s in await sources.list_to_leave(a.id)] == [dull.id]  # выйти должен воркер аккаунта
-    assert (await sources.get(busy.id)).status is SourceStatus.active
-    assert (await sources.get(young.id)).status is SourceStatus.active
+    dull_group = await _joined_group(sources, accounts, "dull_chat", 1, a, t0)
+    dull_chan = await sources.add_candidate("dull_chan", "seed", 5)
+    await sources.set_resolved(dull_chan.id, 4, 1, SourceKind.channel, "c", at=t0)
+    found = await _joined_group(sources, accounts, "busy_chat", 2, a, t0)
+    young = await _joined_group(sources, accounts, "young_chat", 3, a, t0)
+    mine = await sources.add_candidate("my_chat", "owner", 10)
+    await sources.set_resolved(mine.id, 5, 1, SourceKind.channel, "m", at=t0)
+    await sources.bump_counts(dull_group.id, read=100, passed=7)  # прошли предфильтр, но LLM не принял ни одной
+    await sources.bump_counts(dull_chan.id, read=120, passed=0)
+    await sources.bump_counts(found.id, read=300, passed=4)
+    await sources.add_found(found.id)
+    await sources.bump_counts(young.id, read=99, passed=0)
+    await sources.bump_counts(mine.id, read=500, passed=0)
+
+    assert await RetireUseless(svc, min_read=100).execute() == 2
+    assert (await sources.get(dull_group.id)).status is SourceStatus.rejected
+    assert (await sources.get(dull_chan.id)).status is SourceStatus.rejected
+    assert [s.id for s in await sources.list_to_leave(a.id)] == [dull_group.id]  # выйти должен воркер аккаунта
+    for kept in (found, young, mine):  # есть находка / мало прочитано / добавлен владельцем
+        assert (await sources.get(kept.id)).status is SourceStatus.active
+    assert await RetireUseless(svc, min_read=100).execute() == 0
 
 
 async def test_eviction_only_of_zero_yield(clock):

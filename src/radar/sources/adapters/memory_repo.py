@@ -182,9 +182,10 @@ class InMemorySourceRepository:
                 and s.assigned_account_id is not None and s.activated_at is not None
                 and s.activated_at < activated_before]
 
-    async def useless(self, activated_before, min_read: int) -> list[Source]:
-        return deepcopy([s for s in self._joined_active_groups(activated_before)
-                         if s.found_count == 0 and s.passed_count == 0 and s.read_count >= min_read])
+    async def unproductive(self, min_read: int) -> list[Source]:
+        return deepcopy(sorted((s for s in self.rows.values()
+                                if s.status is SourceStatus.active and s.found_count == 0
+                                and s.read_count >= min_read and s.added_by != "owner"), key=lambda s: s.id))
 
     async def eviction_candidate(self, activated_before) -> Source | None:
         c = [s for s in self._joined_active_groups(activated_before) if s.found_count == 0]
