@@ -16,3 +16,30 @@ async def test_probe_counts_correct_answers():
     assert result.correct == 4
     assert sorted(result.wrong) == ["s2", "s4"]
     assert result.usage.prompt_tokens == 60
+
+
+async def test_cli_probe_continues_after_a_failing_model(capsys):
+    """Ошибка одной модели (500 у провайдера) не обрывает пробу остальных."""
+    from dependency_injector import providers
+
+    from radar.bootstrap.cli import run
+    from radar.bootstrap.di import Container
+    from radar.screening.adapters.fake_classifier import FakeClassifier
+    from radar.screening.adapters.memory_repos import InMemoryRequirementsRepository
+    from radar.screening.ports import LlmUnavailable
+    from radar.shared.settings import Settings
+    from tests.unit.shared.test_settings import MIN_ENV
+
+    class FlakyByModel(FakeClassifier):
+        async def classify(self, items, requirements, *, model=None, max_chars=None):
+            if model == "broken":
+                raise LlmUnavailable("HTTPStatusError: 500")
+            return await super().classify(items, requirements, model=model, max_chars=max_chars)
+
+    c = Container()
+    c.settings.override(providers.Object(Settings(_env_file=None, **{**MIN_ENV, "BOT_TOKEN": "42:TESTTOKEN"})))
+    c.classifier.override(providers.Object(FlakyByModel()))
+    c.requirements_repo.override(providers.Object(InMemoryRequirementsRepository()))
+    code = await run(["llm", "probe", "broken", "good"], c)
+    out = capsys.readouterr().out
+    assert "broken: ошибка" in out and "good:" in out and code in (0, 1)

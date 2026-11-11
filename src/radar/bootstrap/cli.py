@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from radar.accounts.usecases import InvalidAccountPayload
+from radar.screening.ports import LlmUnavailable
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -62,7 +63,11 @@ async def _llm(args, c) -> int:
     s = c.settings()
     ok = 0
     for model in args.models or [s.NEUROAPI_MODEL]:
-        r = await c.probe_model().execute(model)
+        try:
+            r = await c.probe_model().execute(model)
+        except LlmUnavailable as exc:  # 500/таймаут у одной модели — пробуем остальные
+            print(f"{model}: ошибка ({exc})")
+            continue
         cost = (r.usage.prompt_tokens * s.LLM_PRICE_PER_1K_PROMPT
                 + r.usage.completion_tokens * s.LLM_PRICE_PER_1K_COMPLETION) / 1000
         print(f"{model}: {r.correct}/{r.total}  ошибки: {', '.join(r.wrong) or '—'}  "
