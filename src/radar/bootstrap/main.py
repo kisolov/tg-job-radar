@@ -94,7 +94,8 @@ async def serve_panel(c: Container) -> None:
     await runner.setup()
     try:
         await web.TCPSite(runner, s.WEB_HOST, s.WEB_PORT).start()
-        logger.info("Панель: http://%s:%s (ссылка входа — /web в боте)", s.WEB_HOST, s.WEB_PORT)
+        how = "ссылка /web в боте" + (" или пароль" if s.WEB_PASSWORD else "") if s.bot_enabled else "пароль WEB_PASSWORD"
+        logger.info("Панель: http://%s:%s (вход — %s)", s.WEB_HOST, s.WEB_PORT, how)
         await asyncio.Event().wait()
     finally:
         await runner.cleanup()
