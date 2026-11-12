@@ -5,3 +5,6 @@ __pycache__/
 .superpowers/
 # сессии аккаунтов — секреты, не коммитить
 /accounts/
+.venv/
+.pytest_cache/
+*.pyc

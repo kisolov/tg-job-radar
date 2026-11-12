@@ -5,8 +5,16 @@ Userbot-пул читает как можно больше русскоязыч�
 сообщение. Сам никому не пишет.
 
 ```
-Telegram (Telethon, пул аккаунтов) → предфильтр → склейка дублей → LLM (NeuroAPI, пакетами) → карточка в бота
+Telegram (Telethon, пул аккаунтов) → предфильтр → склейка дублей → LLM (пакетами) → карточка в бота / веб-панель
 ```
+
+LLM — любой OpenAI-совместимый API (`/chat/completions`): по умолчанию [NeuroAPI](https://neuroapi.host), подойдут
+OpenAI, OpenRouter, локальный vLLM/Ollama — достаточно поменять `NEUROAPI_BASE_URL`, `NEUROAPI_KEY`, `NEUROAPI_MODEL`.
+
+> **Важно.** Проект работает через userbot-аккаунты Telegram (MTProto), а не через Bot API. Массовые вступления
+> в группы и чтение чатов от имени пользовательских аккаунтов Telegram может расценить как нарушение правил
+> и заблокировать аккаунт. Темп вступлений и резолвов по умолчанию консервативный и сам тормозит на FloodWait,
+> но риск остаётся на вас: используйте отдельные аккаунты, не основной.
 
 Дизайн: `docs/superpowers/specs/2026-11-04-tg-job-radar-design.md`. Как устроено сейчас: `docs/services/radar/`.
 
@@ -22,12 +30,13 @@ docker compose exec app radar sources import seeds/sources.txt
 Ключ шифрования сессий: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
 Потеряете его — сессии придётся завести заново.
 
-Локально без Docker: `uv sync`, `docker compose up -d db-test`, `uv run pytest`.
+Тесты и локальная разработка — в разделе «Разработка» ниже.
 
 ## Переменные окружения
 
-Обязательные: `DATABASE_URL`, `OWNER_TELEGRAM_ID` (ваш числовой id — только он управляет ботом и получает
-находки), `BOT_TOKEN`, `USERBOT_STORE_KEY`, `NEUROAPI_BASE_URL`, `NEUROAPI_KEY`, `NEUROAPI_MODEL`.
+Обязательные: `DATABASE_URL`, `USERBOT_STORE_KEY`, `NEUROAPI_BASE_URL`, `NEUROAPI_KEY`, `NEUROAPI_MODEL`, а также
+либо бот — `BOT_TOKEN` и `OWNER_TELEGRAM_ID` (ваш числовой id — только он управляет ботом и получает находки), —
+либо `WEB_PASSWORD` для режима без бота.
 
 | Переменная | Дефолт | Смысл |
 |---|---|---|
@@ -98,7 +107,7 @@ radar sources import seeds/sources.txt
 radar sources add t.me/x @y
 radar sources search "вакансии python" "фриланс заказы" …   # глобальный поиск → кандидаты
 radar llm models                      # модели NeuroAPI
-radar llm probe gpt-4o-mini gpt-4.1-mini gpt-4o   # 6 эталонных сообщений; берите самую дешёвую с 6/6
+radar llm probe gpt-4o-mini gpt-4.1-mini gpt-4o   # 12 эталонных сообщений; берите самую дешёвую с лучшим счётом
 ```
 
 ## Как поменять модель или бюджет
@@ -124,3 +133,17 @@ docker compose exec app radar accounts import-tdata accounts/имя/tdata
 код-пароль — `--passcode`. Номер в tdata не хранится: его спрашиваем у Telegram (`get_me`); для разлогиненной
 сессии — `--phone`. В одной tdata бывает до 3 аккаунтов — импортируются все. Берётся та же авторизация, что
 у Telegram Desktop (api_id 2040), новая сессия не создаётся. Читает tdata библиотека `opentele`.
+
+## Разработка
+
+```bash
+uv sync
+docker compose up -d db-test      # Postgres для тестов на localhost:55432
+uv run pytest
+```
+
+Устройство и инварианты — `docs/services/radar/`; при изменении поведения документация правится в том же коммите.
+
+## Лицензия
+
+[MIT](LICENSE)
